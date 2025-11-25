@@ -111,6 +111,77 @@ A API permite:
 - Ser usada pelo JavaScript com fetch()
 
 ### Endpoints da API
+## Conceito de API no Projeto
+
+A API (Application Programming Interface) implementada neste sistema funciona como uma camada intermediária entre o front-end e o banco de dados.  
+Ela permite que diferentes aplicações — como o sistema web, aplicativos mobile ou ferramentas externas como o Postman — acessem os dados dos produtos de forma padronizada, organizada e segura.
+
+Diferente do PHP tradicional, em que uma página inteira é carregada, a API retorna somente os dados necessários no formato JSON, sem HTML.  
+Isso torna o sistema mais rápido, modular e fácil de integrar com outras soluções.
+
+## Motivação Técnica da API
+
+A API foi criada para modernizar o sistema e possibilitar:
+
+- Comunicação assíncrona (sem recarregar páginas)
+- Separação clara entre interface e dados (SPA-friendly)
+- Integração com ferramentas externas (Postman, apps, automações)
+- Padronização das operações de CRUD
+- Melhor organização interna seguindo boas práticas de desenvolvimento
+- Possibilidade de crescimento futuro do sistema (mobile / dashboards)
+- Redução de acoplamento entre PHP e HTML
+
+A API deixa o projeto preparado para qualquer expansão futura, garantindo maior profissionalismo e escalabilidade.
+
+## Arquitetura Detalhada da API
+
+A API segue uma arquitetura simples, mas bem definida:
+
+### 1. Camada de Rota
+O arquivo `api/produtos.php` atua como “roteador”:
+- Detecta o método HTTP (GET ou POST)
+- Analisa parâmetros (search, delete)
+- Direciona para a ação correta
+
+### 2. Camada de Lógica
+Cada operação é tratada dentro de condicional apropriada:
+- GET → listar
+- GET + search → buscar
+- GET + delete → excluir
+- POST → editar
+
+### 3. Camada de Acesso ao Banco
+- Utiliza PDO
+- Prepared statements
+- Tratamento de erros com try/catch
+- Respostas padronizadas
+
+### 4. Camada de Resposta
+- Os dados são convertidos para JSON usando `json_encode`
+- A resposta nunca contém HTML
+- Cliente interpreta o JSON e atualiza interface
+
+Essa arquitetura segue padrões modernos de APIs REST.
+## Padrões REST Utilizados
+
+A API segue conceitos fundamentais de REST:
+
+- **Stateless:** cada requisição é independente
+- **Formato uniforme:** JSON como retorno
+- **Operações definidas por métodos HTTP**
+- **Endpoint único (produtos.php) com múltiplas funções**
+- **URLs amigáveis com parâmetros**
+
+Apesar de simples, a API respeita a filosofia REST e pode evoluir para uma versão mais robusta no futuro.
+## Consumo da API no Front-End
+
+O front-end utiliza o método fetch() do JavaScript para enviar requisições:
+
+``js
+fetch('/Minha_loja/api/produtos.php')
+  .then(res => res.json())
+  .then(data => atualizarTabela(data));
+
 ####  1. Listar produtos
 
 GET:
