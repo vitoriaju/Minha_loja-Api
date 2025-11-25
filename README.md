@@ -110,7 +110,7 @@ A API permite:
 - Ser testada pelo navegador ou Postman
 - Ser usada pelo JavaScript com fetch()
 
-### Endpoints da API
+
 ## Conceito de API no Projeto
 
 A API (Application Programming Interface) implementada neste sistema funciona como uma camada intermediária entre o front-end e o banco de dados.  
