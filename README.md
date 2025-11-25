@@ -16,20 +16,20 @@ O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicaç
 ---
  ### Tecnologias Utilizadas:
 
-- PHP 8+
+- PHP 
 - MySQL / phpMyAdmin
-- Apache (XAMPP/WAMP
+- Apache (XAMPP)
 - PDO – PHP Data Objects
 - HTML + CSS + JavaScript (fetch)
 - Visual Studio Code
 ---
 ###  Requisitos:
 
-- PHP 8 ou superior
+- PHP 
 - Apache habilitado
 - MySQL / phpMyAdmin
 - Navegador atualizado
-- XAMPP, WAMP ou similar
+- XAMPP, 
 ---
 ### Como rodar o projeto:
 
@@ -67,7 +67,7 @@ O usuário acessa index.php, onde está a tela de login.
 #### 2. Autenticação
 
 - O formulário envia os dados para autentica.php
-- Verificação com PDO (prepare, bindParam, execute)
+- Verificação com PDO (prepare, execute)
 - Senhas verificadas com password_verify()
 - Criação de sessão ($_SESSION)
 - Cookies são usados para sessão persistente
