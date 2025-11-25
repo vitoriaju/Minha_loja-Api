@@ -1,158 +1,224 @@
-# Minha Loja
+# README.md – Minha Loja (Sistema + API Integrada)
 
-Um sistema simples de gerenciamento de uma padaria online desenvolvido em **PHP** com uso de **PDO** para conexão ao banco de dados e segue uma estrutura MVC simples, que permite:
-
-**Login e autenticação de usuários (com controle de sessão).**
-
-**Cadastro, listagem e gerenciamento de produtos.**
-
-**Criação e acompanhamento de pedidos e itens de pedidos.**
-
-**Organização por categorias de produtos.**
-
-**Uso de prepared statements para evitar SQL Injection.**
-
-# Tecnologias Utilizadas
-
-PHP (VisualCode)
-
-MySQL
-
-Apache
-(XAMPP/WAMP)
-
-Estrutura MVC (Models / Controllers / Views)
-
-PDO (PHP Data Objects)
-
-Visual Studio Code
+Um sistema simples e funcional de gerenciamento para uma padaria online, desenvolvido em PHP, MySQL e utilizando uma estrutura MVC organizada.
+O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicação mais flexível, segura e preparada para integrações como Postman, JavaScript (fetch), apps mobile e dashboards.
 
 ---
+###  Funcionalidades Principais
 
-## Requisitos
+- Login e autenticação de usuários (com controle de sessão e cookies)
+- Cadastro, listagem, edição e exclusão de produtos
+- Organização por categorias
+- Criação e listagem de pedidos e itens de pedido
+- Prepared Statements (PDO) para evitar SQL Injection
+- Estrutura MVC com Controllers, Models e Views
+- API REST simples integrada ao sistema
+---
+ ### Tecnologias Utilizadas:
 
 - PHP 8+
-- Servidor Apache (ex: XAMPP, WAMP ou similar)
-- MySQL/Myadmin
+- MySQL / phpMyAdmin
+- Apache (XAMPP/WAMP
+- PDO – PHP Data Objects
+- HTML + CSS + JavaScript (fetch)
+- Visual Studio Code
+---
+###  Requisitos:
+
+- PHP 8 ou superior
+- Apache habilitado
+- MySQL / phpMyAdmin
 - Navegador atualizado
+- XAMPP, WAMP ou similar
+---
+### Como rodar o projeto:
+
+####  1. Clone o repositório:
+git clone https://github.com/vitoriaju/Minha_loja-Api.git
+
+#### 2. Coloque o projeto no servidor:
+C:\xampp\htdocs\Minha_loja2
+
+#### 3. Criar banco de dados:
+
+No phpMyAdmin
+CREATE DATABASE minha_loja2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+Depois importe o arquivo SQL: minha_loja.sql
+
+ Usuários de Teste:
+ 
+| Tipo  | E-mail             | Senha   |
+|-------|---------------------|---------|
+| User  | admin@teste.com     | 123     |
+| Admin | admin@teste1.com    | 123456  |
+
+
+Esses usuários já estão incluídos no arquivo .sql.
 
 ---
 
-## Passos para rodar o projeto
+### Fluxo do Sistema
 
-1. Clone este repositório:
-   ```bash
-   git clone https://github.com/vitoriaju/Minha_loja.git
-2. Extrair a pasta para o diretório do servidor:
- C:\xampp\htdocs
+#### 1. Acesso
 
-# Como criar o banco de dados
+O usuário acessa index.php, onde está a tela de login.
 
-Abra o phpMyAdmin ou MySQL.
+#### 2. Autenticação
 
-Crie um banco com o mesmo nome do projeto (Minha_loja):
- ```bash
-CREATE DATABASE minha_loja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+- O formulário envia os dados para autentica.php
+- Verificação com PDO (prepare, bindParam, execute)
+- Senhas verificadas com password_verify()
+- Criação de sessão ($_SESSION)
+- Cookies são usados para sessão persistente
 
-Importe o arquivo SQL:
-file:/minha_loja.sql
+#### 3. Proteção
 
-# Usuário/Senha de teste
+- Todas as páginas internas usam: require 'verifica_sessao.php';
+- Se o usuário não estiver autenticado → volta para o login.
 
-Usuário user : admin@teste.com
+#### 4. Dashboard
 
-Senha user : 123
+Após login, o usuário vê um painel com:
+- Cadastro de produtos
+- Listagem com edição e exclusão
+- Cadastro de categorias
+- Listagem e criação de pedidos
 
-Usuário admin: admin@teste1.com
+#### 5. CRUD
 
-Senha Admin: 123456
+ Fluxo MVC completo:
+- Controller → Model → Banco → Controller → View
 
-O usuário já está incluso no arquivo minha_loja.sql.
+#### 6. Logout
+Encerra sessão e redireciona para index.
 
-# Fluxo do Sistema
+##  API INTEGRADA AO SISTEMA
 
-O sistema da Minha Loja segue o padrão MVC e o fluxo principal de autenticação e gerenciamento é descrito abaixo:
+A API foi criada em:
+/api/produtos.php
 
-**1. Acesso à aplicação**
+Ela substitui a listagem tradicional de produtos, tornando o sistema mais rápido, seguro e moderno.
 
--O usuário abre o navegador e acessa index.php.
+A API permite:
 
--A página inicial apresenta o formulário de login.
+- Listar produtos (GET)
+- Buscar produtos por nome (GET)
+- Excluir produto (GET delete)
+- Editar produto (POST)
+- Retornar JSON
+- Ser testada pelo navegador ou Postman
+- Ser usada pelo JavaScript com fetch()
 
-**2. Processamento de login**
+### Endpoints da API
+####  1. Listar produtos
 
--Ao enviar os dados, o formulário chama autentica.php.
+GET:
 
--Validação dos campos (e-mail e senha).
+http://localhost/Minha_loja/api/produtos.php
 
--Consulta ao banco via PDO (pdo.php).
+####  2. Buscar
 
--Verificação da senha com password_verify($senha_digitada, $hash_bd).
+GET:
 
--Criação da sessão ($_SESSION['usuario']).
+http://localhost/Minha_loja/api/produtos.php?search=NOME
 
--Uso de cookies para manter a sessão ativa em páginas futuras e facilitar autenticação persistente.
 
--Regeneração do ID da sessão (session_regenerate_id(true)) para aumentar a segurança.
+Exemplo:
 
-**3. Proteção das páginas internas**
+?search=pao
 
--Todas as páginas privadas incluem verifica_sessao.php.
+####  3. Excluir
 
--Este arquivo verifica se a sessão e os cookies existem e são válidos, evitando acesso não autorizado.
+GET:
 
--Caso o usuário não esteja autenticado, é redirecionado para a página de login.
+http://localhost/Minha_loja/api/produtos.php?delete=ID
 
-**4. Área autenticada / Dashboard**
 
--Usuários autenticados acessam o Dashboard, com funcionalidades de gerenciamento da loja:
+Exemplo:
 
--Cadastro de produtos: nome, descrição, preço, estoque e categoria.
+?delete=5
 
--Listagem de produtos: permite edição e exclusão.
 
--Gerenciamento de categorias: criar, listar, editar e excluir categorias.
+Retorno:
 
--Criação e listagem de pedidos e itens de pedidos.
+{"status":"success","msg":"Produto deletado"}
 
--Cada ação é realizada por um Controller que chama o Model correspondente para acessar ou modificar o banco via PDO, e retorna os dados para a View.
+#### 4. Editar
 
-**5. Fluxo de CRUD (Produtos, Categorias e Pedidos)**
+POST:
 
--Controller: recebe requisição → chama Model → Model executa query → Controller retorna dados → View mostra resultado.
+http://localhost/Minha_loja/api/produtos.php
 
--Model: lida diretamente com o banco usando queries preparadas (prepare() + execute()).
 
--View: interface HTML/PHP que exibe os dados (listas, formulários, alertas de sucesso/erro).
+| Campo     | Descrição         |
+|-----------|--------------------|
+| id        | ID do produto      |
+| nome      | Nome               |
+| preco     | Preço              |
+| qualidade | Qualidade          |
+| categoria | Categoria          |
+| validade  | Data               |
+| estoque   | Quantidade         |
 
-**6. Logout / Finalização de sessão**
 
--Usuário pode encerrar a sessão, destruindo $_SESSION e os cookies relacionados, e é redirecionado para index.php.
 
-# Estrutura do projeto:
+| Endpoint | Método | URL |
+|----------|---------|------|
+| Listar produtos | GET | [http://localhost/Minha_loja/api/produtos.php](http://localhost/Minha_loja/api/produtos.php) |
+| Buscar produto | GET | [http://localhost/Minha_loja/api/produtos.php?search=pao](http://localhost/Minha_loja/api/produtos.php?search=pao) |
+| Excluir | GET | [http://localhost/Minha_loja/api/produtos.php?delete=5](http://localhost/Minha_loja/api/produtos.php?delete=5) |
+| Editar | POST | [http://localhost/Minha_loja/api/produtos.php](http://localhost/Minha_loja/api/produtos.php) |
 
-Models/ → consultas SQL e lógica de dados.
+## Integração da API na Interface
 
-Controllers/ → recebem requisições e controlam fluxo (login, CRUDs).
+O arquivo:
 
-Views/ → páginas HTML/PHP que exibem dados.
+views/listar_produtos.php foi reescrito usando:
 
-index.php → pagina ne login.
+- fetch() para carregar produtos da API
+- Modal para edição
+- Exclusão via API (sem reload)
+- Busca com botão “Buscar”
+- Atualização da tabela dinamicamente
+- Mesmo CSS original
+- Fluxo 100% via JavaScript
 
-utils.php → funções auxiliares (formatação, redirecionamentos).
+A listagem de produtos agora é:
 
-verifica_sessao.php → valida sessões.
+- Totalmente dinâmica
+- Rápida
+- Moderna
+- Sem recarregar página
 
-# Segurança
+ ### Segurança do Sistema
 
-Senhas salvas com password_hash e verificadas com password_verify.
+- Senhas com password_hash()
+- PDO + prepared statements
+- Sessões validadas em todas as páginas internas
+- API protegida dentro do projeto
+- Bloqueio de acesso não autorizado (verifica_sessao.php)
 
-Uso de prepared statements via PDO para evitar SQL Injection.
+### Estrutura do Projeto: 
+/api
+   produtos.php
+/controllers
+/models
+/views
+   listar_produtos.php
+   dashboard.php
+/config
+index.php
+verifica_sessao.php
+utils.php
 
-Sessões validadas em todas as páginas internas.
+### Erros Comuns
 
-# Erros comuns
-Quando você baixa o arquivo ZIP do GitHub, a pasta extraída vem com o nome **Minha_loja-main**.
+Baixar o ZIP do GitHub cria a pasta:
+Minha_loja-main
+O correto é renomear para:
+Minha_loja2
 
-O ideal é renomear a pasta, removendo o sufixo **"-main"**, deixando apenas **"Minha_loja"**.
+Digitar a URL errada no Postman gera erro 403.
+URL correta:
+http://localhost/Minha_loja/api/produtos.php
