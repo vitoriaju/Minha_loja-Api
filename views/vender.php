@@ -127,6 +127,9 @@ selected>
 </select>
 </td>
 
+
+
+
 <td class="estoque">0</td>
 
 <td class="preco">0.00</td>
@@ -157,6 +160,20 @@ selected>
 Total da Venda: R$ <span id="totalVenda">0.00</span>
 </div>
 
+<div style="margin-top:15px;">
+    <label><strong>Forma de pagamento:</strong></label><br>
+
+    <select name="forma_pagamento" required
+        style="padding:8px; border-radius:8px; width:100%; margin-top:5px;">
+        
+        <option value="">Selecione</option>
+        <option value="dinheiro"> Dinheiro</option>
+        <option value="cartao">Cartão</option>
+        <option value="pix"> Pix</option>
+
+    </select>
+</div>
+
 <br>
 
 <button type="submit" class="button">Finalizar Venda</button>
@@ -183,6 +200,7 @@ linha.querySelector(".estoque").innerText = estoque
 calcularTotal(linha.querySelector(".quantidade"))
 
 }
+
 
 // Calcula total da linha
 function calcularTotal(input){

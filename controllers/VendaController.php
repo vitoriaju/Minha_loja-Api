@@ -17,6 +17,21 @@ try {
     // pega o usuário logado
     $usuario_id = $_SESSION['usuario']['id'];
 
+    // =============================
+    // CAPTURAR FORMA DE PAGAMENTO
+    // =============================
+    $forma_pagamento = $_POST['forma_pagamento'] ?? null;
+
+    if (!$forma_pagamento) {
+        throw new Exception("Forma de pagamento obrigatória.");
+    }
+
+    $formas_validas = ['dinheiro', 'cartao', 'pix'];
+
+    if (!in_array($forma_pagamento, $formas_validas)) {
+        throw new Exception("Forma de pagamento inválida.");
+    }
+
     $valor_total = 0;
 
     // =============================
@@ -25,6 +40,10 @@ try {
     foreach ($_POST['produto_id'] as $index => $produto_id) {
 
         $quantidade = (int) $_POST['quantidade'][$index];
+
+        if ($quantidade <= 0) {
+            throw new Exception("Quantidade inválida.");
+        }
 
         $stmt = $pdo->prepare("SELECT preco, estoque FROM produtos WHERE id = ?");
         $stmt->execute([$produto_id]);
@@ -43,10 +62,14 @@ try {
     }
 
     // =============================
-    // CRIAR VENDA
+    // CRIAR VENDA (AGORA COM PAGAMENTO)
     // =============================
-    $stmt = $pdo->prepare("INSERT INTO vendas (usuario_id, valor_total) VALUES (?, ?)");
-    $stmt->execute([$usuario_id, $valor_total]);
+    $stmt = $pdo->prepare("
+        INSERT INTO vendas (usuario_id, valor_total, forma_pagamento)
+        VALUES (?, ?, ?)
+    ");
+
+    $stmt->execute([$usuario_id, $valor_total, $forma_pagamento]);
 
     $venda_id = $pdo->lastInsertId();
 
@@ -91,7 +114,6 @@ try {
     echo "Erro na venda: " . $e->getMessage();
     exit;
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -132,16 +154,16 @@ color:#7b4f27;
 
 <h2> Venda realizada com sucesso!</h2>
 
-<p>Redirecionando para o dashboard...</p>
+<p>Forma de pagamento: <strong><?php echo htmlspecialchars($forma_pagamento); ?></strong></p>
+
+<p>Redirecionando ...</p>
 
 </div>
 
 <script>
 
 setTimeout(function(){
-
-window.location.href='../views/dashboard.php';
-
+    window.location.href='../views/vender.php';
 },2000);
 
 </script>

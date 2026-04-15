@@ -13,7 +13,7 @@ define('SESSION_TIMEOUT', 10 * 60);
 // Verifica se o usuário está logado
 if (empty($_SESSION['usuario'])) {
     flash_set('info', 'Por favor faça login para acessar essa página.');
-   header("Location: " . BASE_URL . "/idex.php");;
+   header("Location: " . BASE_URL . "/index.php");;
     exit;
 }
 //verefica admin :
@@ -36,7 +36,7 @@ if (isset($_SESSION['ultimo_acesso'])) {
         unset($_SESSION['perfil']);
         unset($_SESSION['ultimo_acesso']);
 
-        header("Location: " . BASE_URL . "/idex.php");;
+        header("Location: " . BASE_URL . "/index.php");;
         exit;
     }
 }

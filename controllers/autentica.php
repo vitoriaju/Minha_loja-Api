@@ -17,7 +17,7 @@ if (!isset($_SESSION['login_attempts'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: " . BASE_URL . "/idex.php");
+    header("Location: " . BASE_URL . "/index.php");
     exit;
 }
 
@@ -26,7 +26,7 @@ $senha = (string)($_POST['senha'] ?? '');
 
 if ($email === '' || $senha === '') {
     flash_set('erro', 'Preencha e-mail e senha.');
- header("Location: " . BASE_URL . "/idex.php");
+ header("Location: " . BASE_URL . "/index.php");
     exit;
 }
 
@@ -35,7 +35,7 @@ if ($_SESSION['login_attempts'] >= $MAX_ATTEMPTS) {
     $last = $_SESSION['login_last_try'];
     if ($last && (time() - $last) < ($LOCK_MINUTES * 60)) {
         flash_set('erro', "Muitas tentativas. Tente novamente em {$LOCK_MINUTES} minuto(s).");
-       header("Location: " . BASE_URL . "/idex.php");
+       header("Location: " . BASE_URL . "/index.php");
         exit;
     } else {
         
@@ -51,7 +51,7 @@ try {
 } catch (Exception $e) {
     
     flash_set('erro', 'Erro interno. Tente novamente.');
-    header("Location: " . BASE_URL . "/idex.php");
+    header("Location: " . BASE_URL . "/index.php");
     exit;
 }
 
@@ -60,7 +60,7 @@ if (!$user) {
     $_SESSION['login_attempts']++;
     $_SESSION['login_last_try'] = time();
     flash_set('erro', 'E-mail ou senha inválidos.');
-   header("Location: " . BASE_URL . "/idex.php");
+   header("Location: " . BASE_URL . "/index.php");
     exit;
 }
 
@@ -90,7 +90,7 @@ if (password_verify($senha, $stored)) {
             $_SESSION['login_attempts']++;
             $_SESSION['login_last_try'] = time();
             flash_set('erro', 'Erro interno ao atualizar senha. Tente novamente.');
-            header("Location: " . BASE_URL . "/idex.php");
+            header("Location: " . BASE_URL . "/index.php");
             exit;
         }
     } else {
@@ -99,7 +99,7 @@ if (password_verify($senha, $stored)) {
         $_SESSION['login_last_try'] = time();
         $remaining = max(0, $MAX_ATTEMPTS - $_SESSION['login_attempts']);
         flash_set('erro', "E-mail ou senha inválidos. Tentativas restantes: $remaining");
-       header("Location: " . BASE_URL . "/idex.php");
+       header("Location: " . BASE_URL . "/index.php");
         exit;
     }
 
@@ -109,7 +109,7 @@ if (password_verify($senha, $stored)) {
         $_SESSION['login_attempts']++;
         $_SESSION['login_last_try'] = time();
         flash_set('erro', 'E-mail ou senha inválidos.');
-       header("Location: " . BASE_URL . "/idex.php");
+       header("Location: " . BASE_URL . "/index.php");
         exit;
     }
 }
