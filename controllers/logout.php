@@ -1,10 +1,14 @@
 <?php
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../utils.php';
 
 // Sempre inicia a sessão
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+header("Location: " . BASE_URL . "/index.php");
+exit;
 
 // Limpa todas as variáveis de sessão
 $_SESSION = [];
@@ -30,5 +34,5 @@ session_destroy();
 flash_set('success', 'Você saiu com sucesso.');
 
 // Redireciona para a tela inicial (login)
-header("Location: /Minha_loja2/index.php");
+header("Location: " . BASE_URL . "/index.php");
 exit;

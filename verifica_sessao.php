@@ -13,13 +13,13 @@ define('SESSION_TIMEOUT', 10 * 60);
 // Verifica se o usuário está logado
 if (empty($_SESSION['usuario'])) {
     flash_set('info', 'Por favor faça login para acessar essa página.');
-    header('Location: /Minha_loja2/index.php');
+   header("Location: " . BASE_URL . "/idex.php");;
     exit;
 }
 //verefica admin :
 function require_admin(string $redirect = '/index.php') {
     if (!isset($_SESSION['perfil']) || $_SESSION['perfil'] !== 'admin') {
-        header('Location: /Minha_loja2/views/sem_permissao.php');
+        header("Location: " . BASE_URL . "/views/sem_permissao.php");
         exit;
     }
 }
@@ -36,7 +36,7 @@ if (isset($_SESSION['ultimo_acesso'])) {
         unset($_SESSION['perfil']);
         unset($_SESSION['ultimo_acesso']);
 
-        header('Location: /Minha_loja2/index.php');
+        header("Location: " . BASE_URL . "/idex.php");;
         exit;
     }
 }
@@ -46,7 +46,7 @@ $_SESSION['ultimo_acesso'] = time();
 // Verificação de perfil (se a página exigir)
 if (isset($required_perfil) && is_string($required_perfil)) {
     if (empty($_SESSION['perfil']) || $_SESSION['perfil'] !== $required_perfil) {
-        header('Location: /Minha_loja2/views/sem_permissao.php');
+        header("Location: " . BASE_URL . "/views/sem_permissao.php");
         exit;
     }
 }
