@@ -170,7 +170,7 @@ th{
 
         <!-- HEADER -->
         <div class="header">
-            <span>📊 Sistema de Gestão</span>
+            <span> Sistema de Gestão</span>
             <span>👤 <?php echo htmlspecialchars($usuario_nome); ?></span>
         </div>
 
