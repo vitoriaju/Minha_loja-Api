@@ -153,7 +153,11 @@ th{
 
     <a href="cadastrar_produto.php"> Cadastrar Produto</a>
 
+    <a href="entrada_produtos.php"> Entrada de Produtos</a>
+
     <a href="listar_produtos_api.php">Listar Produtos</a>
+
+    <a href="historico_entradas.php"> Histórico de Entradas</a>
 
     <a href="vencidos.php"> Produtos Vencidos</a>
 

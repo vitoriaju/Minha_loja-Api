@@ -157,7 +157,7 @@ R$ <?= number_format($total_dia,2,",",".") ?>
 <br>
 
 <span style="color:orange; font-weight:bold;">
- Pra vencer: <?= $total_vencer ?>
+ Pra vencer:     <?= $total_vencer ?>
 </span>
 
 </div>

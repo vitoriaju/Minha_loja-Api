@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
 
-// VENCIDOS
+
 $stmt_vencidos = $pdo->query("
 SELECT nome, validade
 FROM produtos
@@ -11,7 +11,7 @@ ORDER BY validade ASC
 ");
 $vencidos = $stmt_vencidos->fetchAll();
 
-// VENCENDO EM 7 DIAS
+
 $stmt_vencer = $pdo->query("
 SELECT nome, validade
 FROM produtos
@@ -27,15 +27,13 @@ include __DIR__ . '/layout.php';
 
 <h2> Controle de Validade</h2>
 
-<br>
+<br></br>
 
-<!-- VENCIDOS -->
+
 <div class="card" style="border-left:5px solid red;">
-        <div style="cursor:pointer;"
-     onclick="window.location='vencidos.php'">
+<div style="cursor:pointer;" onclick="window.location='vencidos.php'">
 
-    <h3> Vencidos</h3>
-
+<h3>Vencidos</h3>
 
 <br>
 
@@ -45,8 +43,23 @@ include __DIR__ . '/layout.php';
 
 <?php foreach($vencidos as $p): ?>
 
-<li style="color:red;">
+<?php
+$dias = floor((strtotime($p['validade']) - time()) / 86400);
+
+
+if($dias == 0){
+    $texto = "vence hoje";
+}elseif($dias < 0){
+    $texto = abs($dias) . " dias atrasado";
+}else{
+    $texto = "vence em $dias dias";
+}
+?>
+
+<li style="color:red; font-weight:bold;">
 <?= htmlspecialchars($p['nome']) ?> - <?= $p['validade'] ?>
+
+(<?= $texto ?>)
 </li>
 
 <?php endforeach; ?>
@@ -56,7 +69,6 @@ include __DIR__ . '/layout.php';
 <?php else: ?>
 
 <p style="color:green;"> Nenhum vencido</p>
-                     
 
 <?php endif; ?>
 
@@ -69,12 +81,11 @@ include __DIR__ . '/layout.php';
 <br>
 
 
+<div class="card" style="border-left:5px solid orange;">
+<div style="cursor:pointer;">
 
-<div class="card" style="border-left:5px solid red;">
-        <div style="cursor:pointer;">
-    
-
-    <h3> Uma semana para vencer</h3>
+<h3>Uma semana para vencer</h3>
+<br>
 
 <?php if(count($vencer) > 0): ?>
 
@@ -82,8 +93,32 @@ include __DIR__ . '/layout.php';
 
 <?php foreach($vencer as $p): ?>
 
-<li style="color:orange;">
+<?php
+$dias = floor((strtotime($p['validade']) - time()) / 86400);
+
+
+if($dias == 0){
+    $texto = "vence hoje";
+}elseif($dias < 0){
+    $texto = abs($dias) . " dias atrasado";
+}else{
+    $texto = "vence em $dias dias";
+}
+
+
+if($dias <= 1){
+    $cor = "red";
+}elseif($dias <= 3){
+    $cor = "orange";
+}else{
+    $cor = "green";
+}
+?>
+
+<li style="color:<?= $cor ?>; font-weight:bold;">
 <?= htmlspecialchars($p['nome']) ?> - <?= $p['validade'] ?>
+
+(<?= $texto ?>)
 </li>
 
 <?php endforeach; ?>
@@ -92,7 +127,7 @@ include __DIR__ . '/layout.php';
 
 <?php else: ?>
 
-<p style="color:green;"> Nenhum </p>
+<p style="color:green;"> Nenhum</p>
 
 <?php endif; ?>
 
