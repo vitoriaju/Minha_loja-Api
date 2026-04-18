@@ -161,6 +161,8 @@ th{
 
     <a href="vencidos.php"> Produtos Vencidos</a>
 
+    <a href="producao_dia.php"> Produção</a>
+
      <a href="cadastrar.php"> Criar Conta</a>
 
     <a href="nova_senha.php"> Alterar Senha</a>

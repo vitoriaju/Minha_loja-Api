@@ -17,7 +17,7 @@ include __DIR__ . '/layout.php';
 
 <div class="card">
 
-<h2>🧾 Histórico de Vendas</h2>
+<h2> Histórico de Vendas</h2>
 
 <?php if(count($vendas) > 0): ?>
 

@@ -39,7 +39,7 @@ include __DIR__ . '/layout.php';
         <option value="user">Usuário</option>
         <option value="admin">Administrador</option>
     </select>
-
+    
     <button type="submit">Cadastrar</button>
 
 </form>

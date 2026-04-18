@@ -28,7 +28,7 @@ include 'layout.php';
 
 <div class="card">
 
-<h2>📦 Cadastro de Produto</h2>
+<h2> Cadastro de Produto</h2>
 
 <?php if(isset($mensagem)) { ?>
     <div style="margin-bottom:15px; color:green; font-weight:bold;">
