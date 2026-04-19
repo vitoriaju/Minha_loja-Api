@@ -13,11 +13,13 @@ class Produto {
         $sql = "SELECT * FROM produtos";
         $result = $this->conn->query($sql);
         $produtos = [];
+
         if ($result && $result->num_rows > 0) {
             while($row = $result->fetch_assoc()) {
                 $produtos[] = $row;
             }
         }
+
         return $produtos;
     }
 
@@ -31,25 +33,50 @@ class Produto {
     }
 
     // Cadastrar produto
-    public function cadastrar($nome, $preco, $qualidade, $categoria, $validade, $estoque) {
-        $stmt = $this->conn->prepare("INSERT INTO produtos (nome, preco, qualidade, categoria, validade, estoque) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sdsssi", $nome, $preco, $qualidade, $categoria, $validade, $estoque);
+    public function cadastrar($nome, $preco, $categoria, $validade, $estoque, $unidade) {
+
+        $stmt = $this->conn->prepare("
+            INSERT INTO produtos (nome, preco, categoria, validade, estoque, unidade_medida) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->bind_param("sdssis", 
+            $nome, 
+            $preco, 
+            $categoria, 
+            $validade, 
+            $estoque,
+            $unidade
+        );
+
         return $stmt->execute();
     }
 
     // Atualizar produto
     public function atualizar($id, $dados) {
-        $stmt = $this->conn->prepare("UPDATE produtos SET nome=?, preco=?, qualidade=?, categoria=?, validade=?, estoque=? WHERE id=?");
+
+        $stmt = $this->conn->prepare("
+            UPDATE produtos SET 
+                nome=?, 
+                preco=?, 
+                categoria=?, 
+                validade=?, 
+                estoque=?, 
+                unidade_medida=? 
+            WHERE id=?
+        ");
+
         $stmt->bind_param(
-            "sdsssii",
+            "sdssisi",
             $dados['nome'],
             $dados['preco'],
-            $dados['qualidade'],
             $dados['categoria'],
             $dados['validade'],
             $dados['estoque'],
+            $dados['unidade_medida'],
             $id
         );
+
         return $stmt->execute();
     }
 
@@ -60,73 +87,78 @@ class Produto {
         return $stmt->execute();
     }
 
-//listarVencidos
-public function listarVencidos() {
-    $hoje = date('Y-m-d');
-    $stmt = $this->conn->prepare("SELECT * FROM produtos WHERE validade < ?");
-    $stmt->bind_param("s", $hoje);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Listar vencidos
+    public function listarVencidos() {
+        $hoje = date('Y-m-d');
 
-    $produtos = [];
-    while ($row = $result->fetch_assoc()) {
-        $produtos[] = $row;
+        $stmt = $this->conn->prepare("
+            SELECT * FROM produtos WHERE validade < ?
+        ");
+
+        $stmt->bind_param("s", $hoje);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $produtos = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $produtos[] = $row;
+        }
+
+        return $produtos;
     }
-    return $produtos;
-}
-// Criar produto via API (recebe array)
-public function criar($dados) {
 
-    $stmt = $this->conn->prepare("
-        INSERT INTO produtos (nome, preco, qualidade, categoria, validade, estoque)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
+    // Criar produto via API
+    public function criar($dados) {
 
-    $stmt->bind_param(
-        "sdsssi",
-        $dados['nome'],
-        $dados['preco'],
-        $dados['qualidade'],
-        $dados['categoria'],
-        $dados['validade'],
-        $dados['estoque']
-    );
+        $stmt = $this->conn->prepare("
+            INSERT INTO produtos (nome, preco, categoria, validade, estoque, unidade_medida)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
 
-    if ($stmt->execute()) {
-        return ["mensagem" => "Produto criado com sucesso"];
-    } else {
-        return ["erro" => "Falha ao criar produto"];
+        $stmt->bind_param(
+            "sdssis",
+            $dados['nome'],
+            $dados['preco'],
+            $dados['categoria'],
+            $dados['validade'],
+            $dados['estoque'],
+            $dados['unidade_medida']
+        );
+
+        if ($stmt->execute()) {
+            return ["mensagem" => "Produto criado com sucesso"];
+        } else {
+            return ["erro" => "Falha ao criar produto"];
+        }
     }
-}
 
+    // Atualizar produto via API
+    public function atualizarAPI($id, $dados) {
 
-// Atualizar produto via API (recebe array)
-public function atualizarAPI($id, $dados) {
+        $stmt = $this->conn->prepare("
+            UPDATE produtos 
+            SET nome=?, preco=?, categoria=?, validade=?, estoque=?, unidade_medida=?
+            WHERE id=?
+        ");
 
-    $stmt = $this->conn->prepare("
-        UPDATE produtos 
-        SET nome=?, preco=?, qualidade=?, categoria=?, validade=?, estoque=?
-        WHERE id=?
-    ");
+        $stmt->bind_param(
+            "sdssisi",
+            $dados['nome'],
+            $dados['preco'],
+            $dados['categoria'],
+            $dados['validade'],
+            $dados['estoque'],
+            $dados['unidade_medida'],
+            $id
+        );
 
-    $stmt->bind_param(
-        "sdsssii",
-        $dados['nome'],
-        $dados['preco'],
-        $dados['qualidade'],
-        $dados['categoria'],
-        $dados['validade'],
-        $dados['estoque'],
-        $id
-    );
-
-    if ($stmt->execute()) {
-        return ["mensagem" => "Produto atualizado com sucesso"];
-    } else {
-        return ["erro" => "Falha ao atualizar produto"];
+        if ($stmt->execute()) {
+            return ["mensagem" => "Produto atualizado com sucesso"];
+        } else {
+            return ["erro" => "Falha ao atualizar produto"];
+        }
     }
-}
-
 
 }
 ?>

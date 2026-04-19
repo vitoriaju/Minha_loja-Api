@@ -31,7 +31,7 @@
     `id` int(11) NOT NULL,
     `nome` varchar(100) NOT NULL,
     `preco` decimal(10,2) NOT NULL,
-    `qualidade` varchar(50) DEFAULT NULL,
+   
     `categoria` varchar(50) DEFAULT NULL,
     `validade` date DEFAULT NULL,
     `estoque` int(11) NOT NULL DEFAULT 0,
@@ -42,12 +42,12 @@
   -- Despejando dados para a tabela `produtos`
   --
 
-  INSERT IGNORE INTO `produtos` (`id`, `nome`, `preco`, `qualidade`, `categoria`, `validade`, `estoque`, `criado_em`) VALUES
-  (2, 'pao ', 0.90, 'A', 'Pao', '2026-03-12', 1000, '2025-09-20 14:56:34'),
-  (3, 'Leite Quata', 5.50, 'A', 'Laticinio', '2026-03-12', 500, '2025-09-20 16:24:17'),
-  (5, 'Requeijão', 14.00, 'A', 'Laticinio', '2025-09-21', 3, '2025-09-20 17:51:55'),
-  (7, 'coca cola', 12.99, 'A', 'Refrigerante', '2026-03-12', 100, '2025-09-21 00:56:41'),
-  (8, 'Guarana 1L', 6.99, 'A', 'Refrigerante', '2027-03-12', 100, '2025-09-27 19:54:46');
+  INSERT IGNORE INTO `produtos` (`id`, `nome`, `preco`, `unidade_medida`, `categoria`, `validade`, `estoque`, `criado_em`) VALUES
+  (2, 'pao ', 0.90, 'unidade', 'Pao', '2026-03-12', 1000, '2025-09-20 14:56:34'),
+  (3, 'Leite Quata', 5.50, 'unidade', 'Laticinio', '2026-03-12', 500, '2025-09-20 16:24:17'),
+  (5, 'Requeijão', 14.00, 'unidade', 'Laticinio', '2025-09-21', 3, '2025-09-20 17:51:55'),
+  (7, 'coca cola', 12.99, 'unidade', 'Refrigerante', '2026-03-12', 100, '2025-09-21 00:56:41'),
+  (8, 'Guarana 1L', 6.99, 'unidade', 'Refrigerante', '2027-03-12', 100, '2025-09-27 19:54:46');
 
   -- --------------------------------------------------------
 

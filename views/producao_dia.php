@@ -13,6 +13,7 @@ $stmt = $pdo->query("
 SELECT 
     p.id,
     p.nome,
+    p.unidade_medida,
 
     COALESCE(ontem.total, 0) as ontem,
     COALESCE(semana.total_semana / 7, 0) as media,
@@ -69,7 +70,7 @@ $produtos = $stmt->fetchAll();
 <input type="hidden" name="produto_novo[]" value="">
 </td>
 
-<td><?= $p['sugestao'] ?></td>
+<td><?= $p['sugestao'] ?> <?= $p['unidade_medida'] ?></td>
 
 <td>
 <input type="number" name="quantidade[]" value="<?= $p['sugestao'] ?>">
@@ -84,11 +85,11 @@ $produtos = $stmt->fetchAll();
 
 <br>
 
-<button type="button" onclick="adicionarLinha()">➕ Adicionar Produto</button>
+<button type="button" onclick="adicionarLinha()"> Adicionar Produto</button>
 
 <br><br>
 
-<button type="submit">💾 Salvar Produção</button>
+<button type="submit"> Salvar Produção</button>
 
 </form>
 
@@ -130,7 +131,7 @@ function adicionarLinha(){
 }
 
 
-// 🔥 FUNÇÃO FORA (GLOBAL)
+//  FUNÇÃO FORA 
 function toggleNovo(select){
 
     let input = select.parentElement.querySelector('input[name="produto_novo[]"]');

@@ -5,13 +5,20 @@ require_once '../verifica_sessao.php';
 $stmt = $pdo->query("SELECT * FROM produtos WHERE estoque > 0");
 $produtos = $stmt->fetchAll();
 
-// layout
 include __DIR__ . '/layout.php';
+
+
 ?>
+
+<?php if (isset($_GET['sucesso'])): ?>
+    <div style="background:#d4edda; color:#155724; padding:10px; margin-bottom:15px; border-radius:5px;">
+        Venda realizada com sucesso!
+    </div>
+<?php endif; ?>
 
 <div class="card">
 
-<h2> Realizar Venda</h2>
+<h2>Realizar Venda</h2>
 
 <form method="POST" action="../controllers/VendaController.php">
 
@@ -22,7 +29,8 @@ include __DIR__ . '/layout.php';
 <th>Produto</th>
 <th>Estoque</th>
 <th>Preço</th>
-<th>Quantidade</th>
+<th>Tipo</th>
+<th>Quantidade/Peso</th>
 <th>Total</th>
 <th>Ação</th>
 </tr>
@@ -39,7 +47,7 @@ include __DIR__ . '/layout.php';
 value="<?= $produto['id'] ?>"
 data-preco="<?= $produto['preco'] ?>"
 data-estoque="<?= $produto['estoque'] ?>"
-selected>
+data-unidade="<?= $produto['unidade_medida'] ?>">
 <?= $produto['nome'] ?>
 </option>
 <?php endforeach; ?>
@@ -48,9 +56,10 @@ selected>
 
 <td class="estoque">0</td>
 <td class="preco">0.00</td>
+<td class="tipo">-</td>
 
 <td>
-<input type="number" name="quantidade[]" class="quantidade" min="1" value="1" onchange="calcularTotal(this)">
+<input type="number" name="quantidade[]" class="quantidade" value="1" min="0.001" step="1" onchange="calcularTotal(this)">
 </td>
 
 <td class="total">0.00</td>
@@ -67,7 +76,7 @@ selected>
 
 <br>
 
-<button type="button" onclick="adicionarItem()"> Adicionar Produto</button>
+<button type="button" onclick="adicionarItem()">Adicionar Produto</button>
 
 <br><br>
 
@@ -80,9 +89,9 @@ Total da Venda: R$ <span id="totalVenda">0.00</span>
 <label><strong>Forma de pagamento:</strong></label>
 <select name="forma_pagamento" required>
     <option value="">Selecione</option>
-    <option value="dinheiro"> Dinheiro</option>
-    <option value="cartao"> Cartão</option>
-    <option value="pix"> Pix</option>
+    <option value="dinheiro">Dinheiro</option>
+    <option value="cartao">Cartão</option>
+    <option value="pix">Pix</option>
 </select>
 
 <br><br>
@@ -97,18 +106,31 @@ Total da Venda: R$ <span id="totalVenda">0.00</span>
 
 <script>
 
-
 function atualizarProduto(select){
 
     let linha = select.closest("tr")
 
     let preco = parseFloat(select.selectedOptions[0].dataset.preco) || 0
-    let estoque = parseInt(select.selectedOptions[0].dataset.estoque) || 0
+    let estoque = parseFloat(select.selectedOptions[0].dataset.estoque) || 0
+    let unidade = select.selectedOptions[0].dataset.unidade
 
     linha.querySelector(".preco").innerText = preco.toFixed(2)
     linha.querySelector(".estoque").innerText = estoque
+    linha.querySelector(".tipo").innerText = unidade
 
-    calcularTotal(linha.querySelector(".quantidade"))
+    let input = linha.querySelector(".quantidade")
+
+    if(unidade === "kg"){
+        input.step = "0.001"
+        input.min = "0.001"
+        input.value = "0.100"
+    }else{
+        input.step = "1"
+        input.min = "1"
+        input.value = "1"
+    }
+
+    calcularTotal(input)
 }
 
 
@@ -117,12 +139,7 @@ function calcularTotal(input){
     let linha = input.closest("tr")
 
     let preco = parseFloat(linha.querySelector(".preco").innerText) || 0
-    let quantidade = parseInt(input.value) || 0
-
-    if(quantidade < 1){
-        quantidade = 1
-        input.value = 1
-    }
+    let quantidade = parseFloat(input.value) || 0
 
     let total = preco * quantidade
 
@@ -130,7 +147,6 @@ function calcularTotal(input){
 
     calcularTotalVenda()
 }
-
 
 
 function calcularTotalVenda(){
@@ -156,15 +172,11 @@ function adicionarItem(){
 
     let novaLinha = primeiraLinha.cloneNode(true)
 
-    novaLinha.querySelector(".quantidade").value = 1
-
     tabela.appendChild(novaLinha)
 
-    
     let select = novaLinha.querySelector("select")
     atualizarProduto(select)
 }
-
 
 
 function removerLinha(botao){
@@ -178,7 +190,6 @@ function removerLinha(botao){
 
     calcularTotalVenda()
 }
-
 
 
 window.onload = function(){

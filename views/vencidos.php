@@ -23,7 +23,7 @@ include __DIR__ . '/layout.php';
 <th>ID</th>
 <th>Nome</th>
 <th>Preço</th>
-<th>Qualidade</th>
+<th>Unidade</th>
 <th>Categoria</th>
 <th>Validade</th>
 <th>Estoque</th>
@@ -39,7 +39,7 @@ include __DIR__ . '/layout.php';
 <td><?= $row['id']; ?></td>
 <td><?= $row['nome']; ?></td>
 <td>R$ <?= number_format($row['preco'], 2, ',', '.'); ?></td>
-<td><?= $row['qualidade']; ?></td>
+<td><?= $row['unidade_medida']; ?></td>
 <td><?= $row['categoria']; ?></td>
 <td><?= $row['validade']; ?></td>
 <td><?= $row['estoque']; ?></td>

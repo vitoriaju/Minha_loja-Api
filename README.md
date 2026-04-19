@@ -227,7 +227,7 @@ http://localhost/Minha_loja/api/produtos.php
 | id        | ID do produto      |
 | nome      | Nome               |
 | preco     | Preço              |
-| qualidade | Qualidade          |
+| unidade medida| unidade medida          |
 | categoria | Categoria          |
 | validade  | Data               |
 | estoque   | Quantidade         |

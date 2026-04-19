@@ -17,7 +17,6 @@ if(!$dados) {
     die("Produto não encontrado.");
 }
 
-
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $produto->atualizar($id, $_POST);
     header("Location: listar_produtos.php");
@@ -31,110 +30,125 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Editar Produto</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-    body {
-        margin: 0;
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(to bottom, #fdf3e7, #f5d0a9);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: 50px 0;
-    }
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(to bottom, #fdf3e7, #f5d0a9);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 50px 0;
+}
 
-    .container {
-        width: 400px;
-        background-color: rgba(255,255,255,0.95);
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        box-sizing: border-box;
-    }
+.container {
+    width: 420px;
+    background-color: rgba(255,255,255,0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
 
-    .voltar {
-        display: inline-block;
-        margin-bottom: 15px;
-        color: #7b4f27;
-        text-decoration: none;
-        font-weight: bold;
-    }
+.voltar {
+    display: inline-block;
+    margin-bottom: 15px;
+    color: #7b4f27;
+    text-decoration: none;
+    font-weight: bold;
+}
 
-    .voltar:hover {
-        color: #a66d3a;
-    }
+.voltar:hover {
+    color: #a66d3a;
+}
 
-    h2 {
-        font-family: 'Pacifico', cursive;
-        text-align: center;
-        margin-bottom: 20px;
-        color: #7b4f27;
-    }
+h2 {
+    font-family: 'Pacifico', cursive;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #7b4f27;
+}
 
-    label {
-        display: block;
-        margin-top: 10px;
-        color: #555;
-    }
+label {
+    display: block;
+    margin-top: 10px;
+    color: #555;
+    font-weight: bold;
+}
 
-    input[type="text"], input[type="number"], input[type="date"] {
-        width: 100%;
-        padding: 12px 15px;
-        margin-top: 5px;
-        border: 2px solid #7b4f27;
-        border-radius: 10px;
-        font-size: 16px;
-        outline: none;
-        box-sizing: border-box;
-    }
+input, select {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 5px;
+    border: 2px solid #7b4f27;
+    border-radius: 10px;
+    font-size: 16px;
+    outline: none;
+    box-sizing: border-box;
+}
 
-    input:focus {
-        border-color: #a66d3a;
-    }
+input:focus, select:focus {
+    border-color: #a66d3a;
+}
 
-    button {
-        margin-top: 20px;
-        width: 100%;
-        padding: 12px;
-        background-color: #7b4f27;
-        color: #fff;
-        border: none;
-        border-radius: 12px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
+button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background-color: #7b4f27;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
 
-    button:hover {
-        background-color: #a66d3a;
-    }
+button:hover {
+    background-color: #a66d3a;
+}
 </style>
 </head>
+
 <body>
+
 <div class="container">
-    <a href="listar_produtos.php" class="voltar">← Voltar</a>
-    <h2>Editar Produto</h2>
-    <form method="post" action="">
-        <label>Nome:</label>
-        <input type="text" name="nome" value="<?php echo $dados['nome']; ?>" required>
 
-        <label>Preço:</label>
-        <input type="number" step="0.01" name="preco" value="<?php echo $dados['preco']; ?>" required>
+<a href="listar_produtos.php" class="voltar">← Voltar</a>
 
-        <label>Qualidade:</label>
-        <input type="text" name="qualidade" value="<?php echo $dados['qualidade']; ?>">
+<h2>Editar Produto</h2>
 
-        <label>Categoria:</label>
-        <input type="text" name="categoria" value="<?php echo $dados['categoria']; ?>">
+<form method="post">
 
-        <label>Validade:</label>
-        <input type="date" name="validade" value="<?php echo $dados['validade']; ?>">
+    <label>Nome do Produto:</label>
+    <input type="text" name="nome" value="<?= $dados['nome'] ?>" required>
 
-        <label>Estoque:</label>
-        <input type="number" name="estoque" value="<?php echo $dados['estoque']; ?>" required>
+    <label>Preço (R$):</label>
+    <input type="number" step="0.01" name="preco" value="<?= $dados['preco'] ?>" required>
 
-        <button type="submit">Atualizar Produto</button>
-    </form>
+    <label>Unidade de Medida:</label>
+    <select name="unidade_medida">
+        <option value="unidade" <?= $dados['unidade_medida'] == 'unidade' ? 'selected' : '' ?>>Unidade</option>
+        <option value="kg" <?= $dados['unidade_medida'] == 'kg' ? 'selected' : '' ?>>Kg</option>
+    </select>
+
+    <label>Categoria:</label>
+    <input type="text" name="categoria" value="<?= $dados['categoria'] ?>">
+
+    <label>Data de Validade:</label>
+    <input type="date" name="validade" value="<?= $dados['validade'] ?>">
+
+    <label>Quantidade em Estoque:</label>
+    <input type="number" name="estoque" value="<?= $dados['estoque'] ?>" required>
+
+    <button type="submit"> Atualizar Produto</button>
+
+</form>
+
 </div>
+
 </body>
 </html>

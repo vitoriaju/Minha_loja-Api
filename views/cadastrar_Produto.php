@@ -5,15 +5,18 @@ require_admin('/index.php');
 require_once __DIR__ . '/../config/conexao.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nome = $_POST['nome'];
-    $preco = $_POST['preco'];
-    $qualidade = $_POST['qualidade'];
-    $categoria = $_POST['categoria'];
-    $validade = $_POST['validade'];
-    $estoque = $_POST['estoque'];
 
-    $sql = "INSERT INTO produtos (nome, preco, qualidade, categoria, validade, estoque, criado_em)
-            VALUES ('$nome', '$preco', '$qualidade', '$categoria', '$validade', '$estoque', NOW())";
+    $nome = $_POST['nome'] ?? '';
+    $preco = $_POST['preco'] ?? 0;
+    $categoria = $_POST['categoria'] ?? '';
+    $validade = $_POST['validade'] ?? null;
+    $estoque = $_POST['estoque'] ?? 0;
+    $unidade = $_POST['unidade_medida'] ?? 'unidade';
+
+    $sql = "INSERT INTO produtos 
+    (nome, preco, categoria, validade, estoque, unidade_medida, criado_em)
+    VALUES 
+    ('$nome', '$preco', '$categoria', '$validade', '$estoque', '$unidade', NOW())";
 
     if ($conn->query($sql) === TRUE) {
         $mensagem = "Produto cadastrado com sucesso!";
@@ -22,13 +25,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// CHAMA O LAYOUT
+// LAYOUT
 include 'layout.php';
 ?>
 
 <div class="card">
 
-<h2> Cadastro de Produto</h2>
+<h2>Cadastro de Produto</h2>
 
 <?php if(isset($mensagem)) { ?>
     <div style="margin-bottom:15px; color:green; font-weight:bold;">
@@ -44,8 +47,11 @@ include 'layout.php';
     <label>Preço:</label>
     <input type="number" step="0.01" name="preco" required>
 
-    <label>Qualidade:</label>
-    <input type="text" name="qualidade">
+    <label>Unidade:</label>
+    <select name="unidade_medida">
+        <option value="unidade">Unidade</option>
+        <option value="kg">Kg</option>
+    </select>
 
     <label>Categoria:</label>
     <input type="text" name="categoria">

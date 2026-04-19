@@ -1,172 +1,97 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 require_once '../pdo.php';
 require_once '../verifica_sessao.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo "Acesso inválido.";
-    exit;
-}
+session_start(); 
 
 try {
 
     $pdo->beginTransaction();
 
-    // pega o usuário logado
-    $usuario_id = $_SESSION['usuario']['id'];
+    $produtos = $_POST['produto_id'];
+    $quantidades = $_POST['quantidade'];
+    $forma_pagamento = $_POST['forma_pagamento'];
 
-    // =============================
-    // CAPTURAR FORMA DE PAGAMENTO
-    // =============================
-    $forma_pagamento = $_POST['forma_pagamento'] ?? null;
-
-    if (!$forma_pagamento) {
-        throw new Exception("Forma de pagamento obrigatória.");
+    //  PEGA USUÁRIO DA SESSÃO
+    if (isset($_SESSION['usuario']['id'])) {
+        $usuario_id = $_SESSION['usuario']['id'];
+    } elseif (isset($_SESSION['usuario_id'])) {
+        $usuario_id = $_SESSION['usuario_id'];
+    } else {
+        throw new Exception("Usuário não identificado.");
     }
 
-    $formas_validas = ['dinheiro', 'cartao', 'pix'];
+    $totalVenda = 0;
 
-    if (!in_array($forma_pagamento, $formas_validas)) {
-        throw new Exception("Forma de pagamento inválida.");
-    }
+    //  CRIA VENDA COM USUÁRIO
+    $stmt = $pdo->prepare("
+        INSERT INTO vendas (data_venda, forma_pagamento, usuario_id) 
+        VALUES (NOW(), ?, ?)
+    ");
+    $stmt->execute([$forma_pagamento, $usuario_id]);
 
-    $valor_total = 0;
+    $venda_id = $pdo->lastInsertId();
 
-    // =============================
-    // CALCULAR VALOR TOTAL DA VENDA
-    // =============================
-    foreach ($_POST['produto_id'] as $index => $produto_id) {
+    for ($i = 0; $i < count($produtos); $i++) {
 
-        $quantidade = (int) $_POST['quantidade'][$index];
+        $produto_id = $produtos[$i];
+        $quantidade = floatval($quantidades[$i]);
 
-        if ($quantidade <= 0) {
-            throw new Exception("Quantidade inválida.");
-        }
-
-        $stmt = $pdo->prepare("SELECT preco, estoque FROM produtos WHERE id = ?");
+        // buscar produto
+        $stmt = $pdo->prepare("SELECT * FROM produtos WHERE id = ?");
         $stmt->execute([$produto_id]);
-
-        $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+        $produto = $stmt->fetch();
 
         if (!$produto) {
             throw new Exception("Produto não encontrado.");
         }
 
-        if ($produto['estoque'] < $quantidade) {
-            throw new Exception("Estoque insuficiente para o produto ID $produto_id");
+        //  VALIDAÇÃO KG / UNIDADE
+        if ($produto['unidade_medida'] == 'kg') {
+            if ($quantidade <= 0) {
+                throw new Exception("Peso inválido.");
+            }
+        } else {
+            if ($quantidade < 1) {
+                throw new Exception("Quantidade inválida.");
+            }
         }
 
-        $valor_total += $produto['preco'] * $quantidade;
-    }
+        $preco = floatval($produto['preco']);
+        $total = $quantidade * $preco;
 
-    // =============================
-    // CRIAR VENDA (AGORA COM PAGAMENTO)
-    // =============================
-    $stmt = $pdo->prepare("
-        INSERT INTO vendas (usuario_id, valor_total, forma_pagamento)
-        VALUES (?, ?, ?)
-    ");
-
-    $stmt->execute([$usuario_id, $valor_total, $forma_pagamento]);
-
-    $venda_id = $pdo->lastInsertId();
-
-    // =============================
-    // INSERIR ITENS E ATUALIZAR ESTOQUE
-    // =============================
-    foreach ($_POST['produto_id'] as $index => $produto_id) {
-
-        $quantidade = (int) $_POST['quantidade'][$index];
-
-        $stmt = $pdo->prepare("SELECT preco, estoque FROM produtos WHERE id = ?");
-        $stmt->execute([$produto_id]);
-
-        $produto = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // salva item da venda
+        // salva item
         $stmt = $pdo->prepare("
             INSERT INTO itens_venda (venda_id, produto_id, quantidade, preco_unitario)
             VALUES (?, ?, ?, ?)
         ");
+        $stmt->execute([$venda_id, $produto_id, $quantidade, $preco]);
 
-        $stmt->execute([
-            $venda_id,
-            $produto_id,
-            $quantidade,
-            $produto['preco']
-        ]);
+        // atualizar estoque
+        $novoEstoque = $produto['estoque'] - $quantidade;
 
-        // atualiza estoque
-        $novo_estoque = $produto['estoque'] - $quantidade;
+        if ($novoEstoque < 0) {
+            throw new Exception("Estoque insuficiente para o produto: " . $produto['nome']);
+        }
 
         $stmt = $pdo->prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
-        $stmt->execute([$novo_estoque, $produto_id]);
+        $stmt->execute([$novoEstoque, $produto_id]);
+
+        $totalVenda += $total;
     }
+    $stmt = $pdo->prepare("UPDATE vendas SET valor_total = ? WHERE id = ?");
+    $stmt->execute([$totalVenda, $venda_id]);
+
+
 
     $pdo->commit();
+
+    header("Location: ../views/vender.php?sucesso=1");
+    exit;
 
 } catch (Exception $e) {
 
     $pdo->rollBack();
 
     echo "Erro na venda: " . $e->getMessage();
-    exit;
 }
-?>
-
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-
-<style>
-
-body{
-font-family:Roboto;
-background: linear-gradient(to bottom,#fdf3e7,#f5d0a9);
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
-
-.box{
-background:white;
-padding:40px;
-border-radius:20px;
-box-shadow:0 8px 20px rgba(0,0,0,0.2);
-text-align:center;
-}
-
-h2{
-color:#7b4f27;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="box">
-
-<h2> Venda realizada com sucesso!</h2>
-
-<p>Forma de pagamento: <strong><?php echo htmlspecialchars($forma_pagamento); ?></strong></p>
-
-<p>Redirecionando ...</p>
-
-</div>
-
-<script>
-
-setTimeout(function(){
-    window.location.href='../views/vender.php';
-},2000);
-
-</script>
-
-</body>
-</html>

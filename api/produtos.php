@@ -2,16 +2,18 @@
 header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . "/../config/conexao.php";
 
+
 // ==========================
 // LISTAR COM BUSCA
 // ==========================
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search'])) {
     $search = "%" . $_GET['search'] . "%";
+
     $sql = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
     $sql->bind_param("s", $search);
     $sql->execute();
-    $result = $sql->get_result();
 
+    $result = $sql->get_result();
     echo json_encode($result->fetch_all(MYSQLI_ASSOC));
     exit;
 }
@@ -30,11 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['delete'])) {
 // ==========================
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
+
     $sql = $conn->prepare("DELETE FROM produtos WHERE id=?");
     $sql->bind_param("i", $id);
 
     if ($sql->execute()) {
-        echo json_encode(["status" => "success", "msg" => "Produto deletado"]);
+        echo json_encode(["status" => "success"]);
     } else {
         echo json_encode(["status" => "error"]);
     }
@@ -45,27 +48,41 @@ if (isset($_GET['delete'])) {
 // EDITAR PRODUTO
 // ==========================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+
     $id = $_POST['id'];
-    $nome = $_POST['nome'];
-    $preco = $_POST['preco'];
-    $qualidade = $_POST['qualidade'];
-    $categoria = $_POST['categoria'];
-    $validade = $_POST['validade'];
-    $estoque = $_POST['estoque'];
+    $nome = $_POST['nome'] ?? '';
+    $preco = $_POST['preco'] ?? 0;
+    $preco = str_replace(',', '.', $preco); // 🔥 corrige vírgula
+    $unidade = $_POST['unidade_medida'] ?? 'unidade';
+    $categoria = $_POST['categoria'] ?? '';
+    $validade = $_POST['validade'] ?? null;
+    $estoque = $_POST['estoque'] ?? 0;
 
-    $sql = $conn->prepare("UPDATE produtos 
-        SET nome=?, preco=?, qualidade=?, categoria=?, validade=?, estoque=? 
-        WHERE id=?");
+    $sql = $conn->prepare("
+        UPDATE produtos 
+        SET nome=?, preco=?, unidade_medida=?, categoria=?, validade=?, estoque=? 
+        WHERE id=?
+    ");
 
-    $sql->bind_param("sdssssi", 
-        $nome, $preco, $qualidade, $categoria, $validade, $estoque, $id
+    $sql->bind_param("sdssssi",
+        $nome,
+        $preco,
+        $unidade,
+        $categoria,
+        $validade,
+        $estoque,
+        $id
     );
 
     if ($sql->execute()) {
         echo json_encode(["status" => "success"]);
     } else {
-        echo json_encode(["status" => "error"]);
+        echo json_encode([
+            "status" => "error",
+            "erro" => $conn->error
+        ]);
     }
+
     exit;
 }
 

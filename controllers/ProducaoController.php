@@ -16,7 +16,7 @@ try{
         $quantidade = $_POST['quantidade'][$i];
         $produto_novo = trim($_POST['produto_novo'][$i]);
 
-        // 🔥 NOVO PRODUTO
+        //  NOVO PRODUTO
         if(empty($produto_id) && !empty($produto_novo)){
 
             // verifica se já existe
