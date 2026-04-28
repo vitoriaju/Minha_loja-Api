@@ -313,6 +313,8 @@ th{
 
             <a class="menu-link<?= $ativo('cadastrar_Produto.php') ?>" href="cadastrar_Produto.php">Cadastrar Produto</a>
 
+            <a class="menu-link<?= $ativo('importar_xml.php') ?>" href="importar_xml.php">Importar XML</a>
+
             <a class="menu-link<?= $ativo('entrada_produtos.php') ?>" href="entrada_produtos.php">Entrada de Produtos</a>
 
             <a class="menu-link<?= $ativo('listar_produtos_api.php') ?>" href="listar_produtos_api.php">Listar Produtos</a>

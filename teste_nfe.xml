@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+    <NFe>
+        <infNFe Id="NFe35260412345678000190550010000001234567890123" versao="4.00">
+            <ide>
+                <cUF>35</cUF>
+                <cNF>56789012</cNF>
+                <natOp>VENDA</natOp>
+                <mod>55</mod>
+                <serie>1</serie>
+                <nNF>123</nNF>
+                <dhEmi>2026-04-28T10:00:00-03:00</dhEmi>
+                <tpNF>1</tpNF>
+                <idDest>1</idDest>
+                <cMunFG>3550308</cMunFG>
+                <tpImp>1</tpImp>
+                <tpEmis>1</tpEmis>
+                <cDV>3</cDV>
+                <tpAmb>2</tpAmb>
+                <finNFe>1</finNFe>
+                <indFinal>0</indFinal>
+                <indPres>1</indPres>
+                <procEmi>0</procEmi>
+                <verProc>TESTE</verProc>
+            </ide>
+
+            <emit>
+                <CNPJ>12345678000190</CNPJ>
+                <xNome>Fornecedor Teste LTDA</xNome>
+                <enderEmit>
+                    <xLgr>Rua Teste</xLgr>
+                    <nro>100</nro>
+                    <xBairro>Centro</xBairro>
+                    <cMun>3550308</cMun>
+                    <xMun>Sao Paulo</xMun>
+                    <UF>SP</UF>
+                    <CEP>01000000</CEP>
+                    <cPais>1058</cPais>
+                    <xPais>Brasil</xPais>
+                </enderEmit>
+                <IE>123456789</IE>
+                <CRT>1</CRT>
+            </emit>
+
+            <dest>
+                <CNPJ>00999999000199</CNPJ>
+                <xNome>Minha Loja</xNome>
+                <indIEDest>9</indIEDest>
+            </dest>
+
+            <det nItem="1">
+                <prod>
+                    <cProd>PROD001</cProd>
+                    <cEAN>SEM GTIN</cEAN>
+                    <xProd>PAO FRANCES KG</xProd>
+                    <NCM>19059090</NCM>
+                    <CFOP>5102</CFOP>
+                    <uCom>KG</uCom>
+                    <qCom>5.0000</qCom>
+                    <vUnCom>12.0000</vUnCom>
+                    <vProd>60.00</vProd>
+                    <cEANTrib>SEM GTIN</cEANTrib>
+                    <uTrib>KG</uTrib>
+                    <qTrib>5.0000</qTrib>
+                    <vUnTrib>12.0000</vUnTrib>
+                    <indTot>1</indTot>
+                </prod>
+            </det>
+
+            <det nItem="2">
+                <prod>
+                    <cProd>PROD002</cProd>
+                    <cEAN>SEM GTIN</cEAN>
+                    <xProd>LEITE INTEGRAL 1L</xProd>
+                    <NCM>04012010</NCM>
+                    <CFOP>5102</CFOP>
+                    <uCom>UN</uCom>
+                    <qCom>10.0000</qCom>
+                    <vUnCom>4.5000</vUnCom>
+                    <vProd>45.00</vProd>
+                    <cEANTrib>SEM GTIN</cEANTrib>
+                    <uTrib>UN</uTrib>
+                    <qTrib>10.0000</qTrib>
+                    <vUnTrib>4.5000</vUnTrib>
+                    <indTot>1</indTot>
+                </prod>
+            </det>
+
+            <total>
+                <ICMSTot>
+                    <vProd>105.00</vProd>
+                    <vNF>105.00</vNF>
+                </ICMSTot>
+            </total>
+        </infNFe>
+    </NFe>
+</nfeProc>
