@@ -1,5 +1,3 @@
 .env
-views/.env
-.env.example
-docs/GUIA_DO_CODIGO.md
+docs/docs.md
 vendor/
