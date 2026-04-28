@@ -1,13 +1,13 @@
 <?php
 require_once __DIR__ . '/../verifica_sessao.php';
-require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../pdo.php';
 
-$stmt = $conn->query("
+$stmt = $pdo->query("
 SELECT * FROM produtos 
 WHERE estoque <= 5
 ");
 
-$produtos = $stmt->fetch_all(MYSQLI_ASSOC);
+$produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include __DIR__ . '/layout.php';
 ?>

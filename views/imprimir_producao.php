@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
 
 $id = $_GET['id'];

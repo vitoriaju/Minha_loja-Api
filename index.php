@@ -109,6 +109,7 @@ button:hover {
 
     <!-- Formulário -->
     <form action="controllers/autentica.php" method="post" novalidate>
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
         <input type="email" id="email" name="email" placeholder="Digite seu e-mail" required>
         <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
         <button type="submit">Entrar</button>

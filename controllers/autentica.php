@@ -21,6 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+if (!csrf_check($_POST['csrf_token'] ?? '')) {
+    flash_set('erro', 'Sessao expirada. Tente novamente.');
+    header("Location: " . BASE_URL . "/index.php");
+    exit;
+}
+
 $email = trim((string)($_POST['email'] ?? ''));
 $senha = (string)($_POST['senha'] ?? '');
 
@@ -45,12 +51,13 @@ if ($_SESSION['login_attempts'] >= $MAX_ATTEMPTS) {
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT id, email, senha_hash, perfil FROM usuarios WHERE email = ? LIMIT 1');
+    // Busca tambem email_verificado para bloquear contas que ainda nao confirmaram o e-mail.
+    $stmt = $pdo->prepare('SELECT id, email, senha_hash, perfil, email_verificado FROM usuarios WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     
-    flash_set('erro', 'Erro interno. Tente novamente.');
+    flash_set('erro', 'Erro interno. Verifique se a migration de confirmacao de e-mail foi importada.');
     header("Location: " . BASE_URL . "/index.php");
     exit;
 }
@@ -64,13 +71,21 @@ if (!$user) {
     exit;
 }
 
+if ((int)($user['email_verificado'] ?? 0) !== 1) {
+    $_SESSION['login_attempts']++;
+    $_SESSION['login_last_try'] = time();
+    flash_set('erro', 'Confirme seu e-mail antes de fazer login.');
+    header("Location: " . BASE_URL . "/index.php");
+    exit;
+}
+
 
 $stored = $user['senha_hash'] ?? '';
 
 if (password_verify($senha, $stored)) {
     
 } else {
-    
+    // Compatibilidade com senhas antigas em texto puro: se encontrar, migra para hash.
     $looks_like_hash = false;
     if (is_string($stored) && strlen($stored) >= 60 && (strpos($stored, '$2y$') === 0 || strpos($stored, '$argon') === 0)) {
         $looks_like_hash = true;
@@ -119,6 +134,7 @@ $_SESSION['login_attempts'] = 0;
 $_SESSION['login_last_try'] = null;
 
 session_regenerate_id(true);
+// Dados minimos guardados na sessao para as telas protegidas.
 $_SESSION['usuario'] = ['id' => $user['id'], 'email' => $user['email']];
 $_SESSION['perfil'] = $user['perfil'] ?? 'user';
 

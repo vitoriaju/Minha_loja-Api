@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../verifica_sessao.php';
 require_once '../pdo.php';
 include __DIR__ . '/layout.php';
 
@@ -11,6 +12,7 @@ $produtos = $stmt->fetchAll();
 <h2> Entrada por Nota Fiscal</h2>
 
 <form method="POST" action="../controllers/EntradaController.php">
+<input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
 <label>Número da Nota:</label>
 <input type="text" name="numero_nota" required>

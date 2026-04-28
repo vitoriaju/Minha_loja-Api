@@ -1,5 +1,5 @@
 <?php 
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../verifica_sessao.php';
 
 include __DIR__ . '/layout.php';
 ?>

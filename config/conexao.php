@@ -1,12 +1,4 @@
 <?php
-$host = "localhost"; 
-$user = "root";      
-$pass = "";          
-$db   = "minha_loja2"; 
-
-$conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die("❌ Falha na conexão: " . $conn->connect_error);
-}
-?>
+// Arquivo mantido para includes antigos.
+// A conexao oficial do projeto agora e PDO, criada em config.php como $pdo.
+require_once __DIR__ . '/config.php';

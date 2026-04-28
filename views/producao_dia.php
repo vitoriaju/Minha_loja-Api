@@ -1,105 +1,390 @@
 <?php
 require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
+require_once __DIR__ . '/../utils.php';
 
-include __DIR__ . '/layout.php';
+/*
+    Regra:
+    - Antes das 20h: mostra produção de hoje baseada no fechamento de ontem.
+    - Depois das 20h: mostra produção de amanhã baseada no fechamento de hoje.
+*/
+$horaAtual = intval(date('H'));
 
-// TODOS PRODUTOS
-$stmtAll = $pdo->query("SELECT id, nome FROM produtos WHERE categoria = 'Padaria'");
+$dataProducaoPadrao = $horaAtual >= 20
+    ? date('Y-m-d', strtotime('+1 day'))
+    : date('Y-m-d');
+
+$dataProducao = $_GET['data_producao'] ?? $dataProducaoPadrao;
+
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataProducao)) {
+    $dataProducao = $dataProducaoPadrao;
+}
+
+$dataBase = date('Y-m-d', strtotime($dataProducao . ' -1 day'));
+
+$dataProducaoFormatada = date('d/m/Y', strtotime($dataProducao));
+$dataBaseFormatada = date('d/m/Y', strtotime($dataBase));
+
+function qtd_input($valor) {
+    return rtrim(rtrim(number_format(floatval($valor), 3, '.', ''), '0'), '.');
+}
+
+function qtd_tela($valor) {
+    return rtrim(rtrim(number_format(floatval($valor), 3, ',', '.'), '0'), ',');
+}
+
+/*
+    Todos os produtos de padaria para adicionar manualmente
+*/
+$stmtAll = $pdo->query("
+    SELECT id, nome
+    FROM produtos
+    WHERE categoria = 'Padaria'
+    ORDER BY nome
+");
 $todos = $stmtAll->fetchAll();
 
-// SUGESTÃO
-$stmt = $pdo->query("
-SELECT 
-    p.id,
-    p.nome,
-    p.unidade_medida,
-
-    COALESCE(ontem.total, 0) as ontem,
-    COALESCE(semana.total_semana / 7, 0) as media,
-
-    CEIL((COALESCE(ontem.total,0) * 0.8) + ((COALESCE(semana.total_semana,0) / 7) * 0.2)) as sugestao
-
-FROM produtos p
-
-LEFT JOIN (
-    SELECT i.produto_id, SUM(i.quantidade) as total
-    FROM itens_venda i
-    JOIN vendas v ON v.id = i.venda_id
-    WHERE DATE(v.data_venda) = CURDATE() - INTERVAL 1 DAY
-    GROUP BY i.produto_id
-) ontem ON ontem.produto_id = p.id
-
-LEFT JOIN (
-    SELECT i.produto_id, SUM(i.quantidade) as total_semana
-    FROM itens_venda i
-    JOIN vendas v ON v.id = i.venda_id
-    WHERE v.data_venda >= CURDATE() - INTERVAL 7 DAY
-    GROUP BY i.produto_id
-) semana ON semana.produto_id = p.id
-
-WHERE p.categoria = 'Padaria'
-HAVING sugestao > 0
-ORDER BY sugestao DESC
+/*
+    Busca o fechamento do dia base
+*/
+$stmt = $pdo->prepare("
+    SELECT *
+    FROM fechamentos_diarios
+    WHERE data_fechamento = ?
+    LIMIT 1
 ");
+$stmt->execute([$dataBase]);
+$fechamento = $stmt->fetch();
 
-$produtos = $stmt->fetchAll();
+$produtos = [];
+
+if ($fechamento) {
+    /*
+        Busca os itens vendidos no fechamento
+        e usa a sugestão gerada para montar a produção.
+    */
+    $stmt = $pdo->prepare("
+        SELECT
+            i.produto_id AS id,
+            p.nome,
+            p.unidade_medida,
+            i.quantidade_vendida,
+            i.valor_vendido,
+            i.sugestao_producao AS sugestao
+        FROM itens_fechamento i
+        INNER JOIN produtos p ON p.id = i.produto_id
+        WHERE i.fechamento_id = ?
+          AND i.sugestao_producao > 0
+        ORDER BY i.sugestao_producao DESC
+    ");
+    $stmt->execute([$fechamento['id']]);
+    $produtos = $stmt->fetchAll();
+}
+
+include __DIR__ . '/layout.php';
 ?>
 
-<div class="card">
+<style>
+.producao-container {
+    max-width: 1200px;
+    margin: auto;
+}
 
-<h2>Produção do Dia</h2>
+.producao-topo {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
 
-<form method="POST" action="../controllers/ProducaoController.php">
+.producao-topo h2 {
+    margin-bottom: 5px;
+}
 
-<table id="tabela">
+.producao-topo p {
+    color: #666;
+}
 
-<tr>
-<th>Produto</th>
-<th>Sugestão</th>
-<th>Produzir</th>
-</tr>
+.form-data {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
 
-<?php foreach($produtos as $p): ?>
+.form-data label {
+    font-weight: bold;
+    color: #4b2e16;
+}
 
-<tr>
+.form-data input {
+    width: 190px;
+    margin-bottom: 0;
+}
 
-<td>
-<strong><?= $p['nome'] ?></strong>
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
 
-<input type="hidden" name="produto_novo[]" value="">
-</td>
+.info-card {
+    background: #fff;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    border-left: 5px solid #7b4f27;
+}
 
-<td><?= $p['sugestao'] ?> <?= $p['unidade_medida'] ?></td>
+.info-card span {
+    color: #666;
+    font-size: 14px;
+}
 
-<td>
-<input type="number" name="quantidade[]" value="<?= $p['sugestao'] ?>">
-<input type="hidden" name="produto_id[]" value="<?= $p['id'] ?>">
-</td>
+.info-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    color: #3b2412;
+}
 
-</tr>
+.alerta {
+    background: #fff3cd;
+    color: #856404;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border-left: 5px solid #ffc107;
+    margin-bottom: 20px;
+}
 
-<?php endforeach; ?>
+.alerta a {
+    color: #5a371a;
+    font-weight: bold;
+}
 
-</table>
+.badge-venda {
+    display: inline-block;
+    background: #eef4ff;
+    color: #2452a3;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
 
-<br>
+.badge-sugestao {
+    display: inline-block;
+    background: #e7f7e7;
+    color: #1f7a1f;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
 
-<button type="button" onclick="adicionarLinha()"> Adicionar Produto</button>
+.acoes-producao {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
 
-<br><br>
+.btn-secundario {
+    background: #5a371a;
+}
 
-<button type="submit"> Salvar Produção</button>
+.vazio {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    color: #666;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+</style>
 
-</form>
+<div class="producao-container">
+
+    <div class="producao-topo">
+
+        <div>
+            <h2>Produção do Dia</h2>
+            <p>
+                Lista de produção para <?= e($dataProducaoFormatada) ?>,
+                baseada no fechamento de <?= e($dataBaseFormatada) ?>.
+            </p>
+        </div>
+
+        <form class="form-data" method="GET" action="producao_dia.php">
+            <div>
+                <label>Data da produção</label>
+                <input type="date" name="data_producao" value="<?= e($dataProducao) ?>">
+            </div>
+
+            <button type="submit">Buscar</button>
+        </form>
+
+    </div>
+
+    <?php if ($fechamento): ?>
+
+        <div class="info-grid">
+
+            <div class="info-card">
+                <span>Fechamento usado</span>
+                <strong><?= e($dataBaseFormatada) ?></strong>
+            </div>
+
+            <div class="info-card">
+                <span>Total vendido</span>
+                <strong>
+                    R$ <?= number_format($fechamento['total_vendido'], 2, ',', '.') ?>
+                </strong>
+            </div>
+
+            <div class="info-card">
+                <span>Quantidade de vendas</span>
+                <strong>
+                    <?= intval($fechamento['quantidade_vendas']) ?>
+                </strong>
+            </div>
+
+        </div>
+
+        <?php if (count($produtos) > 0): ?>
+
+            <div class="card">
+
+                <h3>Lista sugerida para produção</h3>
+
+                <p style="color:#666; margin-top:6px;">
+                    O sistema está usando os produtos vendidos no fechamento e sugerindo 10% a mais para o próximo dia.
+                </p>
+
+                <form method="POST" action="../controllers/ProducaoController.php">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+
+                    <table id="tabela">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Vendeu no fechamento</th>
+                                <th>Sugestão</th>
+                                <th>Produzir</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <?php foreach ($produtos as $p): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?= e($p['nome']) ?></strong>
+                                        <input type="hidden" name="produto_id[]" value="<?= e($p['id']) ?>">
+                                        <input type="hidden" name="produto_novo[]" value="">
+                                    </td>
+
+                                    <td>
+                                        <span class="badge-venda">
+                                            <?= qtd_tela($p['quantidade_vendida']) ?>
+                                            <?= e($p['unidade_medida']) ?>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span class="badge-sugestao">
+                                            <?= qtd_tela($p['sugestao']) ?>
+                                            <?= e($p['unidade_medida']) ?>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            type="number"
+                                            name="quantidade[]"
+                                            value="<?= e(qtd_input($p['sugestao'])) ?>"
+                                            min="0"
+                                            step="0.001"
+                                        >
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                    <div class="acoes-producao">
+                        <button type="button" class="btn-secundario" onclick="adicionarLinha()">
+                            Adicionar Produto
+                        </button>
+
+                        <button type="submit">
+                            Salvar Produção
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        <?php else: ?>
+
+            <div class="vazio">
+                <h3>Nenhum produto de padaria vendido nesse fechamento.</h3>
+                <p style="margin-top:8px;">
+                    Você ainda pode adicionar produtos manualmente na produção.
+                </p>
+
+                <br>
+
+                <div class="card" style="text-align:left;">
+                    <form method="POST" action="../controllers/ProducaoController.php">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+
+                        <table id="tabela">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Sugestão</th>
+                                    <th>Produzir</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+
+                        <div class="acoes-producao">
+                            <button type="button" class="btn-secundario" onclick="adicionarLinha()">
+                                Adicionar Produto
+                            </button>
+
+                            <button type="submit">
+                                Salvar Produção
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        <?php endif; ?>
+
+    <?php else: ?>
+
+        <div class="alerta">
+            Ainda não existe fechamento para o dia <?= e($dataBaseFormatada) ?>.
+            Para montar a produção de <?= e($dataProducaoFormatada) ?>, primeiro gere o fechamento do dia anterior.
+            <br><br>
+            <a href="fechamento_dia.php?data=<?= e($dataBase) ?>">
+                Gerar fechamento de <?= e($dataBaseFormatada) ?>
+            </a>
+        </div>
+
+    <?php endif; ?>
 
 </div>
 
 <script>
+function adicionarLinha() {
 
-function adicionarLinha(){
-
-    let tabela = document.getElementById("tabela");
+    let tabela = document.getElementById("tabela").getElementsByTagName("tbody")[0];
 
     let novaLinha = tabela.insertRow();
 
@@ -107,43 +392,50 @@ function adicionarLinha(){
     let cell2 = novaLinha.insertCell(1);
     let cell3 = novaLinha.insertCell(2);
 
-    // PRODUTO
     cell1.innerHTML = `
-    <select name="produto_id[]" onchange="toggleNovo(this)">
-        <option value="">-- Novo Produto --</option>
-        <?php foreach($todos as $t): ?>
-        <option value="<?= $t['id'] ?>"><?= $t['nome'] ?></option>
-        <?php endforeach; ?>
-    </select>
+        <select name="produto_id[]" onchange="toggleNovo(this)">
+            <option value="">-- Novo Produto --</option>
+            <?php foreach($todos as $t): ?>
+                <option value="<?= e($t['id']) ?>"><?= e($t['nome']) ?></option>
+            <?php endforeach; ?>
+        </select>
 
-    <br>
-
-    <input type="text" name="produto_novo[]" placeholder="Digite novo produto" style="display:none;">
+        <input
+            type="text"
+            name="produto_novo[]"
+            placeholder="Digite novo produto"
+            style="display:block;"
+        >
     `;
 
-    // sugestão
-    cell2.innerHTML = `-`;
+    cell2.innerHTML = `Manual`;
 
-    // quantidade
     cell3.innerHTML = `
-    <input type="number" name="quantidade[]" value="1">
+        <input
+            type="number"
+            name="quantidade[]"
+            value="1"
+            min="0"
+            step="0.001"
+        >
     `;
 }
 
-
-//  FUNÇÃO FORA 
-function toggleNovo(select){
+function toggleNovo(select) {
 
     let input = select.parentElement.querySelector('input[name="produto_novo[]"]');
 
-    if(select.value !== ""){
+    if (select.value !== "") {
         input.style.display = "none";
         input.value = "";
     } else {
         input.style.display = "block";
     }
 }
-
 </script>
 
-</div></div></div></body></html>
+</div>
+</div>
+</div>
+</body>
+</html>

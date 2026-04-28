@@ -1,15 +1,23 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../utils.php';
 
-echo $_SESSION['usuario']['perfil'];
+$token = $_GET['token'] ?? '';
+$erro = flash_get('erro');
+$tokenValido = false;
 
-$email = $_GET['email'] ?? '';
-if (empty($email)) {
-    
-    header("Location: recuperar.php?erro=E-mail inválido");
-    exit;
+if ($token !== '') {
+    $tokenHash = hash('sha256', $token);
+    $stmt = $pdo->prepare("
+        SELECT id
+        FROM password_resets
+        WHERE token_hash = ?
+          AND used_at IS NULL
+          AND expires_at >= NOW()
+        LIMIT 1
+    ");
+    $stmt->execute([$tokenHash]);
+    $tokenValido = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
 }
 ?>
 
@@ -33,18 +41,16 @@ body {
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     text-align: center;
-    width: 320px;
+    width: 340px;
 }
-h2 {
-    color: #7b4f27;
-    margin-bottom: 20px;
-}
+h2 { color: #7b4f27; }
 input {
     width: 100%;
     padding: 10px;
     margin: 8px 0;
     border: 1px solid #7b4f27;
     border-radius: 8px;
+    box-sizing: border-box;
 }
 button {
     background: #7b4f27;
@@ -56,21 +62,18 @@ button {
     cursor: pointer;
     margin-top: 10px;
 }
-button:hover {
-    background: #a66d3a;
-}
 a {
     display: block;
     margin-top: 15px;
     color: #7b4f27;
     text-decoration: none;
 }
-a:hover {
-    color: #a66d3a;
-}
 .mensagem {
     margin-bottom: 15px;
-    color: #e3342f;
+    padding: 10px;
+    border-radius: 8px;
+    background: #ffe6e6;
+    color: #b00000;
 }
 </style>
 </head>
@@ -78,14 +81,22 @@ a:hover {
 <div class="container">
     <h2>Criar Nova Senha</h2>
 
-    <form action="../controllers/atualiza_senha.php" method="post">
-        <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
-        <input type="password" name="senha" placeholder="Digite a nova senha" required>
-        <input type="password" name="senha_confirma" placeholder="Confirme a nova senha" required>
-        <button type="submit">Atualizar Senha</button>
-    </form>
+    <?php if ($erro): ?><div class="mensagem"><?= e($erro) ?></div><?php endif; ?>
 
-    <a href="login.php">Voltar ao Login</a>
+    <?php if ($tokenValido): ?>
+        <form action="../controllers/atualiza_senha.php" method="post">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="token" value="<?= e($token) ?>">
+            <input type="password" name="senha" placeholder="Digite a nova senha" required>
+            <input type="password" name="senha_confirma" placeholder="Confirme a nova senha" required>
+            <button type="submit">Atualizar Senha</button>
+        </form>
+    <?php else: ?>
+        <div class="mensagem">Link invalido, expirado ou ausente.</div>
+        <a href="recuperar.php">Solicitar novo link</a>
+    <?php endif; ?>
+
+    <a href="../index.php">Voltar ao Login</a>
 </div>
 </body>
 </html>

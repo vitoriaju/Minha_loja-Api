@@ -2,18 +2,17 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../utils.php';
 
-// Sempre inicia a sessão
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-header("Location: " . BASE_URL . "/index.php");
-exit;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_check($_POST['csrf_token'] ?? '')) {
+    header("Location: " . BASE_URL . "/index.php");
+    exit;
+}
 
-// Limpa todas as variáveis de sessão
 $_SESSION = [];
 
-// Remove cookie da sessão se existir
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(
@@ -27,12 +26,9 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Destrói a sessão
 session_destroy();
 
-// Mensagem de saída
-flash_set('success', 'Você saiu com sucesso.');
+flash_set('sucesso', 'Voce saiu com sucesso.');
 
-// Redireciona para a tela inicial (login)
 header("Location: " . BASE_URL . "/index.php");
 exit;

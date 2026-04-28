@@ -1,51 +1,38 @@
 <?php
+
 class Usuario {
-    private $conn;
+    private PDO $pdo;
 
-    public function __construct($conn) {
-        $this->conn = $conn;
+    public function __construct(PDO $pdo) {
+        $this->pdo = $pdo;
     }
 
-   
-    public function recuperarSenha($email) {
-        
-        $sql = "SELECT * FROM usuarios WHERE email = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
+    public function recuperarSenha($email): bool {
+        $stmt = $this->pdo->prepare("SELECT id FROM usuarios WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-        if ($resultado->num_rows > 0) {
-            $usuario = $resultado->fetch_assoc();
-            return true; 
-        } else {
-            return false;
+    public function cadastrar($nome, $email, $senha): bool {
+        $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+
+        $stmt = $this->pdo->prepare("
+            INSERT INTO usuarios (nome, email, senha_hash, perfil, email_verificado)
+            VALUES (?, ?, ?, 'user', 0)
+        ");
+
+        return $stmt->execute([$nome, $email, $senhaHash]);
+    }
+
+    public function autenticar($email, $senha): array|false {
+        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($usuario && password_verify($senha, $usuario['senha_hash'])) {
+            return $usuario;
         }
-    }
 
-   
-    public function cadastrar($nome, $email, $senha) {
-        $senha_hash = password_hash($senha, PASSWORD_DEFAULT); 
-        $sql = "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("sss", $nome, $email, $senha_hash);
-        return $stmt->execute();
-    }
-
-    
-    public function autenticar($email, $senha) {
-        $sql = "SELECT * FROM usuarios WHERE email = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
-
-        if ($resultado->num_rows > 0) {
-            $usuario = $resultado->fetch_assoc();
-            if (password_verify($senha, $usuario['senha'])) {
-                return $usuario;
-            }
-        }
         return false;
     }
 }

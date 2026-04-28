@@ -1,10 +1,10 @@
 <?php
 require_once __DIR__ . '/../verifica_sessao.php';
 require_admin('/index.php');
-require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../pdo.php';
 require_once __DIR__ . '/../models/Produto.php';
 
-$produto = new Produto($conn);
+$produto = new Produto($pdo);
 
 if(!isset($_GET['id'])) {
     die("ID do produto não informado.");
@@ -18,8 +18,12 @@ if(!$dados) {
 }
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_check($_POST['csrf_token'] ?? '')) {
+        die("Requisicao invalida.");
+    }
+
     $produto->atualizar($id, $_POST);
-    header("Location: listar_produtos.php");
+    header("Location: listar_produtos_api.php");
     exit;
 }
 ?>
@@ -117,11 +121,12 @@ button:hover {
 
 <div class="container">
 
-<a href="listar_produtos.php" class="voltar">← Voltar</a>
+<a href="listar_produtos_api.php" class="voltar">Voltar</a>
 
 <h2>Editar Produto</h2>
 
 <form method="post">
+    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
     <label>Nome do Produto:</label>
     <input type="text" name="nome" value="<?= $dados['nome'] ?>" required>

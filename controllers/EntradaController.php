@@ -1,5 +1,16 @@
 <?php
+require_once '../verifica_sessao.php';
 require_once '../pdo.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: " . BASE_URL . "/views/dashboard.php");
+    exit;
+}
+
+if (!csrf_check($_POST['csrf_token'] ?? '')) {
+    header("Location: " . BASE_URL . "/views/entrada_produtos.php");
+    exit;
+}
 
 $pdo->beginTransaction();
 
