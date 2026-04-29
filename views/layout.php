@@ -325,6 +325,8 @@ th{
 
               <a class="menu-link<?= $ativo('fechamento_dia.php') ?>" href="fechamento_dia.php">Fechamento do Dia</a>
 
+                <a class="menu-link<?= $ativo('financeiro.php') ?>" href="financeiro.php">Financeiro</a>
+
             <a class="menu-link<?= $ativo('producao_dia.php') ?>" href="producao_dia.php">Produção</a>
 
             

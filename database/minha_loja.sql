@@ -19,6 +19,9 @@ USE `minha_loja2`;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `itens_producao`;
 DROP TABLE IF EXISTS `producao`;
+DROP TABLE IF EXISTS `itens_fechamento`;
+DROP TABLE IF EXISTS `fechamentos_diarios`;
+DROP TABLE IF EXISTS `produto_xml_vinculos`;
 DROP TABLE IF EXISTS `itens_entrada`;
 DROP TABLE IF EXISTS `entradas`;
 DROP TABLE IF EXISTS `itens_venda`;
@@ -143,10 +146,20 @@ CREATE TABLE `itens_venda` (
 CREATE TABLE `entradas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `numero_nota` varchar(60) NOT NULL,
+  `serie` varchar(20) DEFAULT NULL,
+  `chave_acesso` char(44) DEFAULT NULL,
   `fornecedor` varchar(120) NOT NULL,
+  `cnpj_fornecedor` varchar(20) DEFAULT NULL,
+  `data_emissao` date DEFAULT NULL,
   `data_entrada` datetime NOT NULL DEFAULT current_timestamp(),
+  `valor_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `origem` enum('manual','xml') NOT NULL DEFAULT 'manual',
+  `xml_nome_arquivo` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_entradas_data_entrada` (`data_entrada`)
+  UNIQUE KEY `uniq_entradas_chave_acesso` (`chave_acesso`),
+  KEY `idx_entradas_data_entrada` (`data_entrada`),
+  KEY `idx_entradas_fornecedor` (`fornecedor`),
+  KEY `idx_entradas_cnpj_fornecedor` (`cnpj_fornecedor`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `itens_entrada` (
@@ -156,14 +169,74 @@ CREATE TABLE `itens_entrada` (
   `quantidade` decimal(10,3) NOT NULL,
   `validade` date DEFAULT NULL,
   `preco` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `descricao_xml` varchar(255) DEFAULT NULL,
+  `codigo_xml` varchar(60) DEFAULT NULL,
+  `ncm` varchar(20) DEFAULT NULL,
+  `cfop` varchar(10) DEFAULT NULL,
+  `unidade_xml` varchar(20) DEFAULT NULL,
+  `valor_total_item` decimal(10,2) NOT NULL DEFAULT 0.00,
   PRIMARY KEY (`id`),
   KEY `fk_itens_entrada_entrada` (`entrada_id`),
   KEY `fk_itens_entrada_produto` (`produto_id`),
+  KEY `idx_itens_entrada_codigo_xml` (`codigo_xml`),
   CONSTRAINT `fk_itens_entrada_entrada`
     FOREIGN KEY (`entrada_id`) REFERENCES `entradas` (`id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_itens_entrada_produto`
+    FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `produto_xml_vinculos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `cnpj_fornecedor` varchar(20) NOT NULL DEFAULT '',
+  `codigo_xml` varchar(60) NOT NULL,
+  `descricao_xml` varchar(255) DEFAULT NULL,
+  `produto_id` int(11) NOT NULL,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  `atualizado_em` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_produto_xml_fornecedor_codigo` (`cnpj_fornecedor`, `codigo_xml`),
+  KEY `fk_produto_xml_vinculos_produto` (`produto_id`),
+  CONSTRAINT `fk_produto_xml_vinculos_produto`
+    FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `fechamentos_diarios` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `data_fechamento` date NOT NULL,
+  `horario_fechamento` time NOT NULL DEFAULT '20:30:00',
+  `total_vendido` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_dinheiro` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_cartao` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_pix` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `quantidade_vendas` int(11) NOT NULL DEFAULT 0,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_fechamentos_diarios_data` (`data_fechamento`),
+  KEY `idx_fechamentos_diarios_data` (`data_fechamento`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `itens_fechamento` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fechamento_id` int(11) NOT NULL,
+  `produto_id` int(11) NOT NULL,
+  `quantidade_vendida` decimal(10,3) NOT NULL DEFAULT 0.000,
+  `valor_vendido` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `sugestao_producao` decimal(10,3) NOT NULL DEFAULT 0.000,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_itens_fechamento_produto` (`fechamento_id`, `produto_id`),
+  KEY `fk_itens_fechamento_produto` (`produto_id`),
+  KEY `idx_itens_fechamento_sugestao` (`sugestao_producao`),
+  CONSTRAINT `fk_itens_fechamento_fechamento`
+    FOREIGN KEY (`fechamento_id`) REFERENCES `fechamentos_diarios` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_itens_fechamento_produto`
     FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
