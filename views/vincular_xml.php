@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../verifica_sessao.php';
+require_admin();
 require_once __DIR__ . '/../pdo.php';
 include __DIR__ . '/layout.php';
 

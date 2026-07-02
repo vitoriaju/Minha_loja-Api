@@ -40,7 +40,7 @@ define('SMTP_PASS', env_value('SMTP_PASS', ''));
 define('SMTP_ENCRYPTION', env_value('SMTP_ENCRYPTION', 'tls'));
 
 
-$tempo_inatividade = 600; 
+$tempo_inatividade = 2 * 60 * 60; // 2 horas 
 
 if (session_status() === PHP_SESSION_NONE) {
 

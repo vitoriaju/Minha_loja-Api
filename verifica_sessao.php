@@ -7,8 +7,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/utils.php';
 
-// Tempo máximo de inatividade em segundos (ex: 15 minutos)
-define('SESSION_TIMEOUT', 10 * 60);
+// Tempo máximo de inatividade em segundos
+define('SESSION_TIMEOUT', 2 * 60 * 60); // 2 horas
 
 // Verifica se o usuário está logado
 if (empty($_SESSION['usuario'])) {

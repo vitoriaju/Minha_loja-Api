@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../verifica_sessao.php';
+require_admin();
 require_once __DIR__ . '/../pdo.php';
 require_once __DIR__ . '/../utils.php';
 
@@ -87,11 +88,6 @@ $totalEntradaManualPix = 0;
 $totalEntradaManualCartao = 0;
 $totalEntradaManualOutro = 0;
 
-$totalSaidaDinheiro = 0;
-$totalSaidaPix = 0;
-$totalSaidaCartao = 0;
-$totalSaidaOutro = 0;
-
 foreach ($movimentacoes as $mov) {
     $valorMov = (float)$mov['valor'];
     $forma = strtolower($mov['forma_pagamento']);
@@ -111,16 +107,6 @@ foreach ($movimentacoes as $mov) {
 
     } else {
         $totalSaidas += $valorMov;
-
-        if ($forma === 'dinheiro') {
-            $totalSaidaDinheiro += $valorMov;
-        } elseif ($forma === 'pix') {
-            $totalSaidaPix += $valorMov;
-        } elseif ($forma === 'cartao' || $forma === 'cartão') {
-            $totalSaidaCartao += $valorMov;
-        } else {
-            $totalSaidaOutro += $valorMov;
-        }
     }
 }
 
@@ -128,11 +114,6 @@ $totalEntrouDinheiro = $totalVendasDinheiro + $totalEntradaManualDinheiro;
 $totalEntrouPix = $totalVendasPix + $totalEntradaManualPix;
 $totalEntrouCartao = $totalVendasCartao + $totalEntradaManualCartao;
 $totalEntrouOutro = $totalVendasOutro + $totalEntradaManualOutro;
-
-$saldoDinheiro = $totalEntrouDinheiro - $totalSaidaDinheiro;
-$saldoPix = $totalEntrouPix - $totalSaidaPix;
-$saldoCartao = $totalEntrouCartao - $totalSaidaCartao;
-$saldoOutro = $totalEntrouOutro - $totalSaidaOutro;
 
 $totalEntradas = $totalEntrouDinheiro + $totalEntrouPix + $totalEntrouCartao + $totalEntrouOutro;
 $saldoDia = $totalEntradas - $totalSaidas;
@@ -316,75 +297,6 @@ textarea{
     padding:12px;
 }
 
-.formas-pagamento-grid{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:16px;
-    margin-bottom:22px;
-}
-
-.forma-resumo-card{
-    background:#fff7ef;
-    border:1px solid #ead2b8;
-    border-radius:16px;
-    padding:16px;
-}
-
-.forma-resumo-card h4{
-    color:#3b2411;
-    margin-bottom:12px;
-    font-size:18px;
-}
-
-.forma-linha{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-    margin-bottom:8px;
-    color:#555;
-}
-
-.forma-linha strong{
-    color:#3b2411;
-}
-
-.forma-linha .positivo{
-    color:#1e7e34;
-    font-weight:bold;
-}
-
-.forma-linha .negativo{
-    color:#c0392b;
-    font-weight:bold;
-}
-
-.ajuste-rapido{
-    margin-top:14px;
-    padding-top:14px;
-    border-top:1px dashed #d6b089;
-}
-
-.ajuste-rapido label{
-    font-size:13px;
-    color:#4b2e16;
-    font-weight:bold;
-}
-
-.ajuste-rapido select,
-.ajuste-rapido input{
-    width:100%;
-    margin-bottom:8px;
-}
-
-.ajuste-rapido button{
-    width:100%;
-    padding:9px;
-    font-size:13px;
-    border-radius:8px;
-}
-
 .badge{
     display:inline-block;
     padding:5px 10px;
@@ -448,10 +360,6 @@ textarea{
 
 @media(max-width:1050px){
     .financeiro-grid{
-        grid-template-columns:1fr;
-    }
-
-    .formas-pagamento-grid{
         grid-template-columns:1fr;
     }
 }
@@ -575,128 +483,7 @@ textarea{
 
         <div class="tabela-card">
             <h3>Movimentações do dia</h3>
-            <p>Separação por dinheiro, Pix e cartão do dia <?= e($dataFormatada) ?>.</p>
-
-            <div class="formas-pagamento-grid">
-
-                <div class="forma-resumo-card">
-                    <h4>Dinheiro</h4>
-
-                    <div class="forma-linha">
-                        <span>Entradas</span>
-                        <strong class="positivo">R$ <?= number_format($totalEntrouDinheiro, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saídas</span>
-                        <strong class="negativo">R$ <?= number_format($totalSaidaDinheiro, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saldo</span>
-                        <strong>R$ <?= number_format($saldoDinheiro, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <form class="ajuste-rapido" method="POST" action="../controllers/FinanceiroController.php">
-                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                        <input type="hidden" name="acao" value="salvar">
-                        <input type="hidden" name="categoria" value="Ajuste financeiro">
-                        <input type="hidden" name="descricao" value="Ajuste manual - Dinheiro">
-                        <input type="hidden" name="forma_pagamento" value="dinheiro">
-                        <input type="hidden" name="data_movimento" value="<?= e($dataSelecionada) ?>">
-                        <input type="hidden" name="observacao" value="Ajuste rápido feito na tela financeiro">
-
-                        <label>Ajustar dinheiro</label>
-                        <select name="tipo" required>
-                            <option value="entrada">Somar entrada</option>
-                            <option value="saida">Diminuir / saída</option>
-                        </select>
-
-                        <input type="text" name="valor" placeholder="0,00" required>
-
-                        <button type="submit">Aplicar ajuste</button>
-                    </form>
-                </div>
-
-                <div class="forma-resumo-card">
-                    <h4>Pix</h4>
-
-                    <div class="forma-linha">
-                        <span>Entradas</span>
-                        <strong class="positivo">R$ <?= number_format($totalEntrouPix, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saídas</span>
-                        <strong class="negativo">R$ <?= number_format($totalSaidaPix, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saldo</span>
-                        <strong>R$ <?= number_format($saldoPix, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <form class="ajuste-rapido" method="POST" action="../controllers/FinanceiroController.php">
-                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                        <input type="hidden" name="acao" value="salvar">
-                        <input type="hidden" name="categoria" value="Ajuste financeiro">
-                        <input type="hidden" name="descricao" value="Ajuste manual - Pix">
-                        <input type="hidden" name="forma_pagamento" value="pix">
-                        <input type="hidden" name="data_movimento" value="<?= e($dataSelecionada) ?>">
-                        <input type="hidden" name="observacao" value="Ajuste rápido feito na tela financeiro">
-
-                        <label>Ajustar Pix</label>
-                        <select name="tipo" required>
-                            <option value="entrada">Somar entrada</option>
-                            <option value="saida">Diminuir / saída</option>
-                        </select>
-
-                        <input type="text" name="valor" placeholder="0,00" required>
-
-                        <button type="submit">Aplicar ajuste</button>
-                    </form>
-                </div>
-
-                <div class="forma-resumo-card">
-                    <h4>Cartão</h4>
-
-                    <div class="forma-linha">
-                        <span>Entradas</span>
-                        <strong class="positivo">R$ <?= number_format($totalEntrouCartao, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saídas</span>
-                        <strong class="negativo">R$ <?= number_format($totalSaidaCartao, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <div class="forma-linha">
-                        <span>Saldo</span>
-                        <strong>R$ <?= number_format($saldoCartao, 2, ',', '.') ?></strong>
-                    </div>
-
-                    <form class="ajuste-rapido" method="POST" action="../controllers/FinanceiroController.php">
-                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                        <input type="hidden" name="acao" value="salvar">
-                        <input type="hidden" name="categoria" value="Ajuste financeiro">
-                        <input type="hidden" name="descricao" value="Ajuste manual - Cartão">
-                        <input type="hidden" name="forma_pagamento" value="cartao">
-                        <input type="hidden" name="data_movimento" value="<?= e($dataSelecionada) ?>">
-                        <input type="hidden" name="observacao" value="Ajuste rápido feito na tela financeiro">
-
-                        <label>Ajustar cartão</label>
-                        <select name="tipo" required>
-                            <option value="entrada">Somar entrada</option>
-                            <option value="saida">Diminuir / saída</option>
-                        </select>
-
-                        <input type="text" name="valor" placeholder="0,00" required>
-
-                        <button type="submit">Aplicar ajuste</button>
-                    </form>
-                </div>
-
-            </div>
+            <p>Resumo das movimentações registradas no dia <?= e($dataFormatada) ?>.</p>
 
             <?php if ($totalVendas > 0 || count($movimentacoes) > 0): ?>
                 <div class="tabela-responsiva">

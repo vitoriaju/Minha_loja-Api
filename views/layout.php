@@ -315,8 +315,6 @@ th{
 
             <a class="menu-link<?= $ativo('importar_xml.php') ?>" href="importar_xml.php">Importar XML</a>
 
-            <a class="menu-link<?= $ativo('entrada_produtos.php') ?>" href="entrada_produtos.php">Entrada de Produtos</a>
-
             <a class="menu-link<?= $ativo('listar_produtos_api.php') ?>" href="listar_produtos_api.php">Listar Produtos</a>
 
             <a class="menu-link<?= $ativo('historico_entradas.php') ?>" href="historico_entradas.php">Histórico de Entradas</a>
@@ -325,9 +323,11 @@ th{
 
               <a class="menu-link<?= $ativo('fechamento_dia.php') ?>" href="fechamento_dia.php">Fechamento do Dia</a>
 
+              <a class="menu-link<?= $ativo('producao_dia.php') ?>" href="producao_dia.php">Produção</a>
+
                 <a class="menu-link<?= $ativo('financeiro.php') ?>" href="financeiro.php">Financeiro</a>
 
-            <a class="menu-link<?= $ativo('producao_dia.php') ?>" href="producao_dia.php">Produção</a>
+            
 
             
             

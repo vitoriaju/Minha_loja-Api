@@ -1,6 +1,6 @@
 <?php
-require_once '../pdo.php';
-require_once '../verifica_sessao.php';
+require_once __DIR__ . '/../verifica_sessao.php';
+require_once __DIR__ . '/../pdo.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

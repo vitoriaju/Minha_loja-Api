@@ -1,6 +1,7 @@
 <?php
-require_once '../verifica_sessao.php';
-require_once '../pdo.php';
+require_once __DIR__ . '/../verifica_sessao.php';
+require_admin();
+require_once __DIR__ . '/../pdo.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: " . BASE_URL . "/views/dashboard.php");
