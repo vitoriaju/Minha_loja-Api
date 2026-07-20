@@ -23,6 +23,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $produto->atualizar($id, $_POST);
+    audit_log($pdo, 'editar', 'produto', (int) $id, ['origem' => 'formulario']);
     header("Location: listar_produtos_api.php");
     exit;
 }

@@ -55,12 +55,15 @@ foreach($_POST['produto_id'] as $i => $produto_id){
 }
 
 
+audit_log($pdo, 'criar', 'entrada', $entrada_id, ['origem' => 'manual']);
 $pdo->commit();
 
 header("Location: ../views/dashboard.php");
 
 }catch(Exception $e){
 
-    $pdo->rollBack();
-    echo "Erro: " . $e->getMessage();
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    log_exception($e, 'Falha ao cadastrar entrada');
+    http_response_code(500);
+    echo "Nao foi possivel cadastrar a entrada.";
 }

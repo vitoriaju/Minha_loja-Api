@@ -1,6 +1,9 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
+require_once __DIR__ . "/../pdo.php";
+require_once __DIR__ . "/../utils.php";
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -14,8 +17,11 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
-require_once __DIR__ . "/../pdo.php";
-require_once __DIR__ . "/../utils.php";
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && ($_SESSION['perfil'] ?? '') !== 'admin') {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "msg" => "Acesso negado"]);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search'])) {
     $stmt = $pdo->prepare("SELECT * FROM produtos WHERE nome LIKE ? ORDER BY id ASC");
@@ -41,9 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
     $stmt = $pdo->prepare("DELETE FROM produtos WHERE id = ?");
 
-    echo json_encode([
-        "status" => $stmt->execute([(int) ($dados['id'] ?? 0)]) ? "success" : "error"
-    ]);
+    $id = (int) ($dados['id'] ?? 0);
+    $ok = $stmt->execute([$id]);
+    if ($ok) audit_log($pdo, 'excluir', 'produto', $id);
+    echo json_encode(["status" => $ok ? "success" : "error"]);
     exit;
 }
 
@@ -71,6 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
         $_POST['estoque'] ?? 0,
         (int) $_POST['id']
     ]);
+
+    if ($ok) audit_log($pdo, 'editar', 'produto', (int) $_POST['id'], ['campos' => ['nome', 'preco', 'unidade_medida', 'categoria', 'validade', 'estoque']]);
 
     echo json_encode(["status" => $ok ? "success" : "error"]);
     exit;

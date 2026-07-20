@@ -81,7 +81,11 @@ $stmt->execute([$dataSelecionada]);
 $movimentacoes = $stmt->fetchAll();
 
 $totalEntradasManuais = 0;
-$totalSaidas = 0;
+$totalEntradasFechamentoManuais = 0;
+$totalSaidasCaixa = 0;
+$totalSaidasNaoCaixa = 0;
+$totalManha = 0;
+$totalTarde = 0;
 
 $totalEntradaManualDinheiro = 0;
 $totalEntradaManualPix = 0;
@@ -95,6 +99,10 @@ foreach ($movimentacoes as $mov) {
     if ($mov['tipo'] === 'entrada') {
         $totalEntradasManuais += $valorMov;
 
+        if ((int)$mov['incluir_fechamento'] === 1) {
+            $totalEntradasFechamentoManuais += $valorMov;
+        }
+
         if ($forma === 'dinheiro') {
             $totalEntradaManualDinheiro += $valorMov;
         } elseif ($forma === 'pix') {
@@ -105,8 +113,15 @@ foreach ($movimentacoes as $mov) {
             $totalEntradaManualOutro += $valorMov;
         }
 
+    } elseif ((int)$mov['incluir_fechamento'] === 1) {
+        $totalSaidasCaixa += $valorMov;
     } else {
-        $totalSaidas += $valorMov;
+        $totalSaidasNaoCaixa += $valorMov;
+    }
+
+    if ($mov['tipo'] === 'entrada' || (int)$mov['incluir_fechamento'] === 1) {
+        if (($mov['turno'] ?? 'geral') === 'manha') $totalManha += $valorMov;
+        if (($mov['turno'] ?? 'geral') === 'tarde') $totalTarde += $valorMov;
     }
 }
 
@@ -116,7 +131,19 @@ $totalEntrouCartao = $totalVendasCartao + $totalEntradaManualCartao;
 $totalEntrouOutro = $totalVendasOutro + $totalEntradaManualOutro;
 
 $totalEntradas = $totalEntrouDinheiro + $totalEntrouPix + $totalEntrouCartao + $totalEntrouOutro;
-$saldoDia = $totalEntradas - $totalSaidas;
+$totalMovimentado = $totalEntradas + $totalSaidasCaixa;
+$faturamentoDia = $totalVendas + $totalEntradasFechamentoManuais;
+$totalDiaInformado = $totalManha + $totalTarde;
+
+$stmt = $pdo->prepare('SELECT total_manha_informado, total_tarde_informado, total_dia_informado FROM fechamentos_diarios WHERE data_fechamento = ? LIMIT 1');
+$stmt->execute([$dataSelecionada]);
+$totaisDeclarados = $stmt->fetch() ?: [];
+$totalManhaDeclarado = $totaisDeclarados['total_manha_informado'] ?? null;
+$totalTardeDeclarado = $totaisDeclarados['total_tarde_informado'] ?? null;
+$totalDiaDeclarado = $totaisDeclarados['total_dia_informado'] ?? null;
+$totalManhaExibido = $totalManhaDeclarado !== null ? (float)$totalManhaDeclarado : $totalManha;
+$totalTardeExibido = $totalTardeDeclarado !== null ? (float)$totalTardeDeclarado : $totalTarde;
+$totalDiaExibido = $totalDiaDeclarado !== null ? (float)$totalDiaDeclarado : ($totalDiaInformado > 0 ? $totalDiaInformado : $faturamentoDia);
 
 $dataFormatada = date('d/m/Y', strtotime($dataSelecionada));
 
@@ -131,6 +158,8 @@ include __DIR__ . '/layout.php';
     flex-direction:column;
     gap:22px;
 }
+.rf-abas{display:flex;gap:8px;background:#fff;padding:8px;border-radius:12px;width:max-content;max-width:100%;box-shadow:0 3px 10px #0001}.rf-abas a{padding:10px 15px;border-radius:8px;text-decoration:none;color:#5a371a;font-weight:bold}.rf-abas a.ativa{background:#7b4f27;color:#fff}
+
 
 .financeiro-topo{
     display:flex;
@@ -195,7 +224,7 @@ include __DIR__ . '/layout.php';
 
 .cards-financeiro{
     display:grid;
-    grid-template-columns:repeat(3, 1fr);
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
     gap:18px;
 }
 
@@ -373,6 +402,8 @@ textarea{
 
 <div class="financeiro-page">
 
+    <nav class="rf-abas"><a class="ativa" href="financeiro.php?data=<?=e($dataSelecionada)?>">Diario</a><a href="financeiro_mensal.php?mes=<?=e(substr($dataSelecionada,0,7))?>">Mensal</a><a href="financeiro_anual.php?ano=<?=e(substr($dataSelecionada,0,4))?>">Anual</a></nav>
+
     <div class="financeiro-topo">
         <div class="financeiro-titulo">
             <h2>Controle Financeiro</h2>
@@ -399,22 +430,43 @@ textarea{
     <div class="cards-financeiro">
 
         <div class="card-financeiro borda-verde">
-            <span>Total de entrada</span>
+            <span>Total Entradas</span>
             <strong>R$ <?= number_format($totalEntradas, 2, ',', '.') ?></strong>
-            <small>Vendas + entradas manuais</small>
+            <small>Soma de todas as entradas</small>
+        </div>
+
+        <div class="card-financeiro" style="border-left-color:#3977b7">
+            <span>Total Cartão Dia</span>
+            <strong>R$ <?= number_format($totalEntrouCartao, 2, ',', '.') ?></strong>
+            <small>Somente cartões da data selecionada</small>
         </div>
 
         <div class="card-financeiro borda-vermelha">
-            <span>Total de saída</span>
-            <strong>R$ <?= number_format($totalSaidas, 2, ',', '.') ?></strong>
-            <small>Compras, gastos e ajustes</small>
+            <span>Total Saidas Caixa</span>
+            <strong>R$ <?= number_format($totalSaidasCaixa, 2, ',', '.') ?></strong>
+            <small>Saidas marcadas para o fechamento</small>
         </div>
 
         <div class="card-financeiro borda-laranja">
-            <span>Saldo do dia</span>
-            <strong>R$ <?= number_format($saldoDia, 2, ',', '.') ?></strong>
-            <small>Entrada menos saída</small>
+            <span>Total Saidas Nao Caixa</span>
+            <strong>R$ <?= number_format($totalSaidasNaoCaixa, 2, ',', '.') ?></strong>
+            <small>Saidas fora do fechamento</small>
         </div>
+
+        <div class="card-financeiro">
+            <span>Total</span>
+            <strong>R$ <?= number_format($totalMovimentado, 2, ',', '.') ?></strong>
+            <small>Entradas + saidas do caixa</small>
+        </div>
+
+        <div class="card-financeiro borda-verde">
+            <span>Total Dia</span>
+            <strong>R$ <?= number_format($totalDiaExibido, 2, ',', '.') ?></strong>
+            <small>Faturamento pertencente ao dia</small>
+        </div>
+
+        <div class="card-financeiro"><span>Total Manha</span><strong>R$ <?= number_format($totalManhaExibido, 2, ',', '.') ?></strong><small>Total informado para a manha</small></div>
+        <div class="card-financeiro"><span>Total Tarde</span><strong>R$ <?= number_format($totalTardeExibido, 2, ',', '.') ?></strong><small>Total informado para a tarde</small></div>
 
     </div>
 
@@ -454,6 +506,9 @@ textarea{
                     required
                 >
 
+                <label>Responsavel ou nome</label>
+                <input type="text" name="responsavel" maxlength="120" placeholder="Ex.: Adriana, Ana Raquel...">
+
                 <div class="linha-dupla">
                     <div>
                         <label>Valor</label>
@@ -474,8 +529,16 @@ textarea{
                 <label>Data</label>
                 <input type="date" name="data_movimento" value="<?= e($dataSelecionada) ?>" required>
 
+                <label>Turno</label>
+                <select name="turno"><option value="geral">Geral</option><option value="manha">Manha</option><option value="tarde">Tarde</option></select>
+
                 <label>Observação</label>
                 <textarea name="observacao" placeholder="Opcional"></textarea>
+
+                <label style="display:flex;gap:9px;align-items:flex-start;background:#fff7ef;padding:12px;border-radius:9px;margin-bottom:15px">
+                    <input type="checkbox" name="incluir_fechamento" checked style="width:auto;margin:3px 0 0">
+                    <span>Contabilizar no fechamento do dia<br><small style="color:#777">Desmarque para dinheiro externo ou valores que nao pertencem ao movimento do dia.</small></span>
+                </label>
 
                 <button class="btn-salvar" type="submit">Salvar lançamento</button>
             </form>
@@ -493,8 +556,10 @@ textarea{
                             <th>Categoria</th>
                             <th>Descrição</th>
                             <th>Forma</th>
+                            <th>Turno</th>
                             <th>Valor</th>
                             <th>Observação</th>
+                            <th>Fechamento</th>
                             <th>Ação</th>
                         </tr>
 
@@ -504,10 +569,12 @@ textarea{
                                 <td>Vendas</td>
                                 <td>Vendas registradas no sistema</td>
                                 <td>Dinheiro</td>
+                                <td>Geral</td>
                                 <td class="valor-entrada">
                                     + R$ <?= number_format($totalVendasDinheiro, 2, ',', '.') ?>
                                 </td>
                                 <td><?= $quantidadeVendas ?> venda(s) no dia</td>
+                                <td>Sim</td>
                                 <td>-</td>
                             </tr>
                         <?php endif; ?>
@@ -518,10 +585,12 @@ textarea{
                                 <td>Vendas</td>
                                 <td>Vendas registradas no sistema</td>
                                 <td>Pix</td>
+                                <td>Geral</td>
                                 <td class="valor-entrada">
                                     + R$ <?= number_format($totalVendasPix, 2, ',', '.') ?>
                                 </td>
                                 <td><?= $quantidadeVendas ?> venda(s) no dia</td>
+                                <td>Sim</td>
                                 <td>-</td>
                             </tr>
                         <?php endif; ?>
@@ -532,10 +601,12 @@ textarea{
                                 <td>Vendas</td>
                                 <td>Vendas registradas no sistema</td>
                                 <td>Cartão</td>
+                                <td>Geral</td>
                                 <td class="valor-entrada">
                                     + R$ <?= number_format($totalVendasCartao, 2, ',', '.') ?>
                                 </td>
                                 <td><?= $quantidadeVendas ?> venda(s) no dia</td>
+                                <td>Sim</td>
                                 <td>-</td>
                             </tr>
                         <?php endif; ?>
@@ -546,10 +617,12 @@ textarea{
                                 <td>Vendas</td>
                                 <td>Vendas registradas no sistema</td>
                                 <td>Outro</td>
+                                <td>Geral</td>
                                 <td class="valor-entrada">
                                     + R$ <?= number_format($totalVendasOutro, 2, ',', '.') ?>
                                 </td>
                                 <td><?= $quantidadeVendas ?> venda(s) no dia</td>
+                                <td>Sim</td>
                                 <td>-</td>
                             </tr>
                         <?php endif; ?>
@@ -565,8 +638,9 @@ textarea{
                                 </td>
 
                                 <td><?= e($mov['categoria']) ?></td>
-                                <td><?= e($mov['descricao']) ?></td>
+                                <td><?= e($mov['descricao']) ?><?= $mov['responsavel'] ? '<br><small>' . e($mov['responsavel']) . '</small>' : '' ?></td>
                                 <td><?= e(ucfirst($mov['forma_pagamento'])) ?></td>
+                                <td><?= e(($mov['turno'] ?? 'geral') === 'manha' ? 'Manha' : ucfirst($mov['turno'] ?? 'geral')) ?></td>
 
                                 <td class="<?= $mov['tipo'] === 'entrada' ? 'valor-entrada' : 'valor-saida' ?>">
                                     <?= $mov['tipo'] === 'entrada' ? '+' : '-' ?>
@@ -574,6 +648,8 @@ textarea{
                                 </td>
 
                                 <td><?= e($mov['observacao'] ?: '-') ?></td>
+
+                                <td><?= (int)$mov['incluir_fechamento'] === 1 ? 'Sim' : 'Não' ?></td>
 
                                 <td>
                                     <form 

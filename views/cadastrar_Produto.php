@@ -75,6 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 ]);
 
                 if ($ok) {
+                    audit_log($pdo, 'criar', 'produto', (int) $pdo->lastInsertId());
                     $mensagem = "Produto cadastrado com sucesso!";
                     $tipo_mensagem = "sucesso";
 

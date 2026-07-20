@@ -126,6 +126,7 @@ try {
     ");
     $stmt->execute([$totalVenda, $valorRecebido, $troco, $venda_id]);
 
+    audit_log($pdo, 'criar', 'venda', $venda_id, ['valor_total' => $totalVenda]);
     $pdo->commit();
 
     // 🧾 REDIRECIONA PRA RECIBO
@@ -134,6 +135,8 @@ try {
 
 } catch (Exception $e) {
 
-    $pdo->rollBack();
-    echo "Erro na venda: " . $e->getMessage();
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    log_exception($e, 'Falha ao registrar venda');
+    http_response_code(500);
+    echo "Nao foi possivel registrar a venda.";
 }

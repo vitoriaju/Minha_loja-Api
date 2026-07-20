@@ -325,7 +325,7 @@ th{
 
               <a class="menu-link<?= $ativo('producao_dia.php') ?>" href="producao_dia.php">Produção</a>
 
-                <a class="menu-link<?= $ativo('financeiro.php') ?>" href="financeiro.php">Financeiro</a>
+                <a class="menu-link<?= in_array($pagina_atual, ['financeiro.php','financeiro_mensal.php','financeiro_anual.php'], true) ? ' active' : '' ?>" href="financeiro.php">Financeiro</a>
 
             
 

@@ -43,6 +43,17 @@ if ($fechamento) {
     $itens = $stmt->fetchAll();
 }
 
+$stmt = $pdo->prepare("SELECT
+    COALESCE(SUM(CASE WHEN tipo = 'saida' AND incluir_fechamento = 1 THEN valor ELSE 0 END), 0) AS retiradas_dia,
+    COALESCE(SUM(CASE WHEN tipo = 'entrada' AND incluir_fechamento = 1 THEN valor ELSE 0 END), 0) AS entradas_manuais,
+    COALESCE(SUM(CASE WHEN incluir_fechamento = 0 THEN valor ELSE 0 END), 0) AS fora_fechamento
+    FROM movimentacoes_financeiras WHERE data_movimento = ?");
+$stmt->execute([$dataSelecionada]);
+$resumoCaixa = $stmt->fetch();
+$retiradasDia = (float)($resumoCaixa['retiradas_dia'] ?? 0);
+$entradasManuais = (float)($resumoCaixa['entradas_manuais'] ?? 0);
+$foraFechamento = (float)($resumoCaixa['fora_fechamento'] ?? 0);
+
 $dataFormatada = date('d/m/Y', strtotime($dataSelecionada));
 $dataProducao = date('d/m/Y', strtotime($dataSelecionada . ' +1 day'));
 
@@ -245,7 +256,7 @@ include __DIR__ . '/layout.php';
         <div class="cards-resumo">
 
             <div class="card-resumo">
-                <span>Total vendido</span>
+                <span>Vendas automaticas</span>
                 <strong>
                     R$ <?= number_format($fechamento['total_vendido'], 2, ',', '.') ?>
                 </strong>
@@ -278,6 +289,29 @@ include __DIR__ . '/layout.php';
                 <strong>
                     <?= intval($fechamento['quantidade_vendas']) ?>
                 </strong>
+            </div>
+
+            <div class="card-resumo">
+                <span>Retiradas do dia</span>
+                <strong>R$ <?= number_format($retiradasDia, 2, ',', '.') ?></strong>
+                <small>Movimentos incluidos no fechamento</small>
+            </div>
+
+            <div class="card-resumo">
+                <span>Entradas manuais</span>
+                <strong>R$ <?= number_format($entradasManuais, 2, ',', '.') ?></strong>
+                <small>Somente lancamentos marcados</small>
+            </div>
+
+            <div class="card-resumo">
+                <span>Resultado do fechamento</span>
+                <strong>R$ <?= number_format((float)$fechamento['total_vendido'] + $entradasManuais - $retiradasDia, 2, ',', '.') ?></strong>
+            </div>
+
+            <div class="card-resumo">
+                <span>Fora do fechamento</span>
+                <strong>R$ <?= number_format($foraFechamento, 2, ',', '.') ?></strong>
+                <small><a href="financeiro.php?data=<?= e($dataSelecionada) ?>">Ver no Financeiro</a></small>
             </div>
 
         </div>

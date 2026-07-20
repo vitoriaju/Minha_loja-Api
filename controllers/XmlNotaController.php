@@ -30,7 +30,8 @@ try {
     header('Location: ' . BASE_URL . '/views/importar_xml.php');
     exit;
 } catch (Throwable $e) {
-    flash_set('erro_xml', 'Erro: ' . $e->getMessage());
+    log_exception($e, 'Falha no processamento de XML');
+    flash_set('erro_xml', 'Nao foi possivel processar a nota XML. Verifique o arquivo e tente novamente.');
     header('Location: ' . BASE_URL . '/views/importar_xml.php');
     exit;
 }
@@ -203,6 +204,7 @@ $novosPrecosVenda = $_POST['novo_preco_venda'] ?? [];
             throw new RuntimeException('Nenhum item válido foi encontrado para salvar.');
         }
 
+        audit_log($pdo, 'importar', 'entrada', $entradaId, ['origem' => 'xml', 'itens' => $totalItensSalvos]);
         $pdo->commit();
         unset($_SESSION['nota_xml_importada']);
 

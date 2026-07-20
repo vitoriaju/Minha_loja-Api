@@ -213,6 +213,7 @@ try {
         ]);
     }
 
+    audit_log($pdo, $fechamentoExistente ? 'editar' : 'criar', 'fechamento', $fechamentoId, ['data' => $dataFechamento]);
     $pdo->commit();
 
     flash_set('sucesso', 'Fechamento diário gerado com sucesso.');
@@ -226,7 +227,8 @@ try {
         $pdo->rollBack();
     }
 
-    flash_set('erro', 'Erro ao gerar fechamento: ' . $e->getMessage());
+    log_exception($e, 'Falha ao gerar fechamento');
+    flash_set('erro', 'Nao foi possivel gerar o fechamento. Tente novamente.');
 
     header("Location: " . BASE_URL . "/views/fechamento_dia.php");
     exit;

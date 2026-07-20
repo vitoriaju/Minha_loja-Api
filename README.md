@@ -1,5 +1,11 @@
 # README.md – Minha Loja (Sistema + API Integrada)
 
+## Configuracao segura
+
+Copie `.env.example` para `.env` e use credenciais exclusivas da aplicacao. O arquivo `.env` nunca deve ser distribuido ou incluido em ZIPs; se ele ja foi compartilhado, troque as senhas do banco e principalmente a senha SMTP.
+
+Em producao, publique somente por HTTPS e configure `APP_ENV=production`, `BASE_URL` com `https://` e `SESSION_SECURE=true`. Para atualizar uma base existente, execute `database/migration_seguranca.sql`. O script tambem traz, como comentarios, um exemplo para criar um usuario MySQL com permissoes limitadas.
+
 Um sistema simples e funcional de gerenciamento para uma padaria online, desenvolvido em PHP, MySQL e utilizando uma estrutura MVC organizada.
 O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicação mais flexível, segura e preparada para integrações como Postman, JavaScript (fetch), apps mobile e dashboards.
 

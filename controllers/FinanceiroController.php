@@ -24,10 +24,13 @@ try {
         $tipo = $_POST['tipo'] ?? '';
         $categoria = trim($_POST['categoria'] ?? '');
         $descricao = trim($_POST['descricao'] ?? '');
+        $responsavel = trim($_POST['responsavel'] ?? '');
         $valor = $_POST['valor'] ?? '0';
         $forma_pagamento = $_POST['forma_pagamento'] ?? 'outro';
         $data_movimento = $_POST['data_movimento'] ?? date('Y-m-d');
+        $turno = $_POST['turno'] ?? 'geral';
         $observacao = trim($_POST['observacao'] ?? '');
+        $incluir_fechamento = isset($_POST['incluir_fechamento']) ? 1 : 0;
 
         $valor = str_replace(',', '.', $valor);
         $valor = floatval($valor);
@@ -52,29 +55,42 @@ try {
             $forma_pagamento = 'outro';
         }
 
+        if (!in_array($turno, ['geral', 'manha', 'tarde'], true)) {
+            $turno = 'geral';
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO movimentacoes_financeiras
             (
                 tipo,
                 categoria,
                 descricao,
+                responsavel,
                 valor,
                 forma_pagamento,
                 data_movimento,
-                observacao
+                turno,
+                observacao,
+                incluir_fechamento
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->execute([
             $tipo,
             $categoria,
             $descricao,
+            $responsavel !== '' ? $responsavel : null,
             $valor,
             $forma_pagamento,
             $data_movimento,
-            $observacao
+            $turno,
+            $observacao,
+            $incluir_fechamento
         ]);
+
+        $movimentoId = (int) $pdo->lastInsertId();
+        audit_log($pdo, 'criar', 'movimentacao_financeira', $movimentoId, ['tipo' => $tipo, 'valor' => $valor, 'incluir_fechamento' => $incluir_fechamento]);
 
         flash_set('sucesso', 'Movimentação financeira cadastrada com sucesso.');
 
@@ -90,15 +106,24 @@ try {
             throw new Exception('Movimentação inválida.');
         }
 
+        $stmt = $pdo->prepare("SELECT data_movimento FROM movimentacoes_financeiras WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $data_movimento = $stmt->fetchColumn();
+
+        if (!$data_movimento) {
+            throw new Exception('Movimentação não encontrada.');
+        }
+
         $stmt = $pdo->prepare("
             DELETE FROM movimentacoes_financeiras
             WHERE id = ?
         ");
         $stmt->execute([$id]);
+        audit_log($pdo, 'excluir', 'movimentacao_financeira', $id);
 
         flash_set('sucesso', 'Movimentação excluída com sucesso.');
 
-        header("Location: " . BASE_URL . "/views/financeiro.php");
+        header("Location: " . BASE_URL . "/views/financeiro.php?data=" . urlencode($data_movimento));
         exit;
     }
 
@@ -106,7 +131,8 @@ try {
 
 } catch (Exception $e) {
 
-    flash_set('erro', 'Erro: ' . $e->getMessage());
+    log_exception($e, 'Falha na operacao financeira');
+    flash_set('erro', 'Nao foi possivel concluir a operacao financeira.');
 
     header("Location: " . BASE_URL . "/views/financeiro.php");
     exit;

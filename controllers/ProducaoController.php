@@ -97,6 +97,7 @@ try {
         throw new Exception("Nenhum produto válido foi informado para produção.");
     }
 
+    audit_log($pdo, 'criar', 'producao', $producao_id, ['itens' => $itensValidos]);
     $pdo->commit();
 
     header("Location: ../views/imprimir_producao.php?id=" . $producao_id);
@@ -108,5 +109,7 @@ try {
         $pdo->rollBack();
     }
 
-    echo "Erro na produção: " . $e->getMessage();
+    log_exception($e, 'Falha ao registrar producao');
+    http_response_code(500);
+    echo "Nao foi possivel registrar a producao.";
 }

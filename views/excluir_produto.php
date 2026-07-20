@@ -16,6 +16,7 @@ if (isset($_POST['id']) && is_numeric($_POST['id'])) {
     
    
     if ($produto->excluir($id)) {
+        audit_log($pdo, 'excluir', 'produto', $id, ['origem' => 'formulario']);
         
         header("Location: listar_produtos_api.php");
         exit;

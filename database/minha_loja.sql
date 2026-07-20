@@ -28,6 +28,8 @@ DROP TABLE IF EXISTS `itens_venda`;
 DROP TABLE IF EXISTS `vendas`;
 DROP TABLE IF EXISTS `password_resets`;
 DROP TABLE IF EXISTS `email_verifications`;
+DROP TABLE IF EXISTS `auditoria`;
+DROP TABLE IF EXISTS `movimentacoes_financeiras`;
 DROP TABLE IF EXISTS `produtos`;
 DROP TABLE IF EXISTS `usuarios`;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -43,6 +45,42 @@ CREATE TABLE `usuarios` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `auditoria` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `usuario_id` int(11) DEFAULT NULL,
+  `acao` varchar(50) NOT NULL,
+  `entidade` varchar(80) NOT NULL,
+  `entidade_id` varchar(80) DEFAULT NULL,
+  `detalhes` json DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_auditoria_usuario` (`usuario_id`),
+  KEY `idx_auditoria_entidade` (`entidade`, `entidade_id`),
+  KEY `idx_auditoria_criado_em` (`criado_em`),
+  CONSTRAINT `fk_auditoria_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `movimentacoes_financeiras` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tipo` enum('entrada','saida') NOT NULL,
+  `categoria` varchar(100) NOT NULL,
+  `descricao` varchar(255) NOT NULL,
+  `responsavel` varchar(120) DEFAULT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `forma_pagamento` enum('dinheiro','cartao','pix','outro') NOT NULL DEFAULT 'outro',
+  `data_movimento` date NOT NULL,
+  `turno` enum('geral','manha','tarde') NOT NULL DEFAULT 'geral',
+  `observacao` text DEFAULT NULL,
+  `incluir_fechamento` tinyint(1) NOT NULL DEFAULT 1,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_mov_fin_data` (`data_movimento`),
+  KEY `idx_mov_fin_turno` (`data_movimento`, `turno`),
+  KEY `idx_mov_fin_fechamento` (`data_movimento`, `incluir_fechamento`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `usuarios` (`id`, `nome`, `email`, `senha`, `senha_hash`, `perfil`, `email_verificado`, `criado_em`) VALUES
@@ -215,6 +253,9 @@ CREATE TABLE `fechamentos_diarios` (
   `total_cartao` decimal(10,2) NOT NULL DEFAULT 0.00,
   `total_pix` decimal(10,2) NOT NULL DEFAULT 0.00,
   `quantidade_vendas` int(11) NOT NULL DEFAULT 0,
+  `total_manha_informado` decimal(10,2) DEFAULT NULL,
+  `total_tarde_informado` decimal(10,2) DEFAULT NULL,
+  `total_dia_informado` decimal(10,2) DEFAULT NULL,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_fechamentos_diarios_data` (`data_fechamento`),
