@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
 require_once __DIR__ . '/../utils.php';
+$is_admin = usuario_eh_admin();
 
 include __DIR__ . '/layout.php';
 ?>
@@ -384,13 +385,13 @@ include __DIR__ . '/layout.php';
     <div class="produtos-header">
         <div class="produtos-title">
             <h2>Produtos Cadastrados</h2>
-            <p>Consulte, pesquise, edite e acompanhe o estoque dos produtos.</p>
+            <p><?= $is_admin ? 'Consulte, pesquise, edite e acompanhe o estoque dos produtos.' : 'Consulte e pesquise os produtos disponíveis.' ?></p>
         </div>
 
         <div class="produtos-actions">
-            <a href="cadastrar_Produto.php" class="prod-btn-link prod-btn-primary">
+            <?php if ($is_admin): ?><a href="cadastrar_Produto.php" class="prod-btn-link prod-btn-primary">
                 Cadastrar Produto
-            </a>
+            </a><?php endif; ?>
 
             <a href="dashboard.php" class="prod-btn-link prod-btn-secondary">
                 Voltar
@@ -456,13 +457,13 @@ include __DIR__ . '/layout.php';
                         <th>Validade</th>
                         <th>Estoque</th>
                         <th>Status</th>
-                        <th>Ações</th>
+                        <?php if ($is_admin): ?><th>Ações</th><?php endif; ?>
                     </tr>
                 </thead>
 
                 <tbody id="tabela-produtos">
                     <tr>
-                        <td colspan="9" class="loading-box">Carregando produtos...</td>
+                        <td colspan="<?= $is_admin ? 9 : 8 ?>" class="loading-box">Carregando produtos...</td>
                     </tr>
                 </tbody>
             </table>
@@ -475,7 +476,7 @@ include __DIR__ . '/layout.php';
 <div id="toast" class="toast"></div>
 
 <!-- MODAL EDITAR -->
-<div id="modal-edit" class="modal-overlay">
+<div id="modal-edit" class="modal-overlay"<?= $is_admin ? '' : ' hidden' ?>>
     <div class="modal-box">
         <div class="modal-header">
             <h3>Editar Produto</h3>
@@ -527,7 +528,7 @@ include __DIR__ . '/layout.php';
 </div>
 
 <!-- MODAL EXCLUIR -->
-<div id="modal-delete" class="modal-overlay">
+<div id="modal-delete" class="modal-overlay"<?= $is_admin ? '' : ' hidden' ?>>
     <div class="modal-box delete-modal">
         <div class="modal-header">
             <h3>Excluir Produto</h3>
@@ -560,6 +561,7 @@ include __DIR__ . '/layout.php';
 <script>
 const API = "../api/produtos.php";
 const CSRF_TOKEN = "<?= e(csrf_token()) ?>";
+const IS_ADMIN = <?= $is_admin ? 'true' : 'false' ?>;
 
 let produtos = [];
 
@@ -745,7 +747,7 @@ function render(){
                     </span>
                 </td>
 
-                <td>
+                ${IS_ADMIN ? `<td>
                     <div class="actions-cell">
                         <button type="button" class="prod-btn prod-btn-secondary" onclick="abrirModalEditar(${Number(p.id)})">
                             Editar
@@ -755,7 +757,7 @@ function render(){
                             Excluir
                         </button>
                     </div>
-                </td>
+                </td>` : ``}
             </tr>
         `;
     }).join("");

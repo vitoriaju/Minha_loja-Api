@@ -12,12 +12,51 @@ if (empty($_SESSION['usuario'])) {
    header("Location: " . BASE_URL . "/index.php");;
     exit;
 }
-//verefica admin :
-function require_admin(string $redirect = '/index.php') {
-    if (!isset($_SESSION['perfil']) || $_SESSION['perfil'] !== 'admin') {
+function perfil_usuario_atual(): string {
+    $perfilDireto = $_SESSION['perfil'] ?? null;
+    $perfilNoUsuario = $_SESSION['usuario']['perfil'] ?? null;
+    $perfil = in_array($perfilDireto, ['admin', 'user'], true)
+        ? $perfilDireto
+        : (in_array($perfilNoUsuario, ['admin', 'user'], true) ? $perfilNoUsuario : 'user');
+
+    // Mantem os dois formatos de sessao sincronizados para codigo legado e novo.
+    $_SESSION['perfil'] = $perfil;
+    $_SESSION['usuario']['perfil'] = $perfil;
+
+    return $perfil;
+}
+
+function usuario_eh_admin(): bool {
+    return perfil_usuario_atual() === 'admin';
+}
+
+function usuario_pode(string $permissao): bool {
+    static $permissoes = [
+        'dashboard' => ['admin', 'user'],
+        'vendas.criar' => ['admin', 'user'],
+        'vendas.dia' => ['admin', 'user'],
+        'produtos.ver' => ['admin', 'user'],
+        'produtos.validade' => ['admin', 'user'],
+        'administracao' => ['admin'],
+        'vendas.historico' => ['admin'],
+        'produtos.gerenciar' => ['admin'],
+        'estoque.gerenciar' => ['admin'],
+        'producao' => ['admin'],
+        'financeiro' => ['admin'],
+    ];
+
+    return in_array(perfil_usuario_atual(), $permissoes[$permissao] ?? [], true);
+}
+
+function require_permission(string $permissao): void {
+    if (!usuario_pode($permissao)) {
         header("Location: " . BASE_URL . "/views/sem_permissao.php");
         exit;
     }
+}
+
+function require_admin(string $redirect = '/index.php'): void {
+    require_permission('administracao');
 }
 
 // Expiração de sessão por tempo de inatividade
@@ -41,7 +80,7 @@ $_SESSION['ultimo_acesso'] = time();
 
 // Verificação de perfil (se a página exigir)
 if (isset($required_perfil) && is_string($required_perfil)) {
-    if (empty($_SESSION['perfil']) || $_SESSION['perfil'] !== $required_perfil) {
+    if (perfil_usuario_atual() !== $required_perfil) {
         header("Location: " . BASE_URL . "/views/sem_permissao.php");
         exit;
     }

@@ -141,8 +141,9 @@ try {
 }
 
 session_regenerate_id(true);
-$_SESSION['usuario'] = ['id' => $user['id'], 'email' => $user['email']];
-$_SESSION['perfil'] = $user['perfil'] ?? 'user';
+$perfil = in_array(($user['perfil'] ?? ''), ['admin', 'user'], true) ? $user['perfil'] : 'user';
+$_SESSION['usuario'] = ['id' => $user['id'], 'email' => $user['email'], 'perfil' => $perfil];
+$_SESSION['perfil'] = $perfil;
 audit_log_safe($pdo, 'login_sucesso', 'autenticacao', $user['id']);
 
 flash_set('sucesso', 'Login efetuado com sucesso.');

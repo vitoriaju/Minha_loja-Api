@@ -7,6 +7,7 @@ $required_perfil = null;
 require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
 require_once __DIR__ . '/../utils.php';
+$is_admin = usuario_eh_admin();
 
 /* =========================
    DADOS PRINCIPAIS
@@ -15,6 +16,13 @@ require_once __DIR__ . '/../utils.php';
 $stmt = $pdo->query("SELECT COUNT(*) AS total FROM produtos");
 $total_produtos = $stmt->fetch()['total'] ?? 0;
 
+$total_vendas = 0;
+$qtd_vendas_dia = 0;
+$total_dia = 0;
+$ticket_medio = 0;
+$ultimas_vendas = [];
+
+if ($is_admin) {
 $stmt = $pdo->query("SELECT COUNT(*) AS total FROM vendas");
 $total_vendas = $stmt->fetch()['total'] ?? 0;
 
@@ -31,11 +39,13 @@ $qtd_vendas_dia = $vendas_dia['quantidade'] ?? 0;
 $total_dia = $vendas_dia['total'] ?? 0;
 
 $ticket_medio = $qtd_vendas_dia > 0 ? $total_dia / $qtd_vendas_dia : 0;
+}
 
 /* =========================
    ALERTAS
 ========================= */
 
+if ($is_admin) {
 $stmt = $pdo->query("
     SELECT nome, estoque, estoque_minimo, unidade_medida
     FROM produtos
@@ -44,7 +54,12 @@ $stmt = $pdo->query("
 ");
 $alertas_estoque = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $total_alertas = count($alertas_estoque);
+} else {
+    $alertas_estoque = [];
+    $total_alertas = 0;
+}
 
+if ($is_admin) {
 $stmt = $pdo->query("
     SELECT p.nome, l.validade
     FROM lotes_estoque l
@@ -80,6 +95,12 @@ $stmt = $pdo->query("
     LIMIT 5
 ");
 $ultimas_vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $vencidos = [];
+    $vencer = [];
+    $total_vencidos = 0;
+    $total_vencer = 0;
+}
 
 include __DIR__ . '/layout.php';
 ?>
@@ -332,6 +353,10 @@ include __DIR__ . '/layout.php';
     text-align:center;
 }
 
+.operational-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.operational-card{display:block;background:white;border-radius:16px;padding:24px;text-decoration:none;color:#3b2411;box-shadow:0 4px 14px rgba(0,0,0,.08);border-top:5px solid #7b4f27;transition:.2s}
+.operational-card span{font-size:30px}.operational-card h3{margin:12px 0 6px}.operational-card p{color:#766;line-height:1.5}.operational-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.12)}
+
 @media(max-width:900px){
     .dashboard-grid{
         grid-template-columns:1fr;
@@ -349,10 +374,19 @@ include __DIR__ . '/layout.php';
 
         <div class="dashboard-actions">
             <a href="vender.php" class="dash-btn">Nova venda</a>
-            <a href="cadastrar_Produto.php" class="dash-btn secondary">Cadastrar produto</a>
+            <?php if ($is_admin): ?><a href="cadastrar_Produto.php" class="dash-btn secondary">Cadastrar produto</a><?php endif; ?>
         </div>
     </div>
 
+    <?php if (!$is_admin): ?>
+    <div class="operational-grid">
+        <a class="operational-card" href="vender.php"><span aria-hidden="true">▣</span><h3>Nova Venda</h3><p>Abra o caixa e registre uma nova venda.</p></a>
+        <a class="operational-card" href="listar_produtos_api.php"><span aria-hidden="true">□</span><h3>Consultar Produtos</h3><p>Pesquise preços e produtos disponíveis.</p></a>
+        <a class="operational-card" href="vendas_dia.php"><span aria-hidden="true">◷</span><h3>Vendas do Dia</h3><p>Acompanhe os registros operacionais de hoje.</p></a>
+        <a class="operational-card" href="vencidos.php"><span aria-hidden="true">!</span><h3>Produtos Vencidos</h3><p>Consulte os lotes que precisam de atenção.</p></a>
+        <a class="operational-card" href="validade.php"><span aria-hidden="true">⌛</span><h3>Validade</h3><p>Veja produtos próximos do vencimento.</p></a>
+    </div>
+    <?php else: ?>
     <div class="stats-grid">
 
         <div class="stat-card" onclick="window.location='listar_produtos_api.php'">
@@ -513,6 +547,7 @@ include __DIR__ . '/layout.php';
         </div>
 
     </div>
+    <?php endif; ?>
 
 </div>
 

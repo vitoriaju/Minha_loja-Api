@@ -13,7 +13,9 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET' && ($_SESSION['perfil'] ?? '') !== 'admin') {
+require_once __DIR__ . '/../verifica_sessao.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && !usuario_pode('produtos.gerenciar')) {
     http_response_code(403);
     echo json_encode(["status" => "error", "msg" => "Acesso negado"]);
     exit;
