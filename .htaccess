@@ -1,0 +1,35 @@
+Options -Indexes
+ServerSignature Off
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Mantem o ambiente local acessivel sem certificado, mas exige HTTPS em hosts reais.
+    RewriteCond %{HTTP_HOST} !^(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?$ [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !^https$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
+
+    RewriteRule ^(?:backups|config|database|docs|models|vendor)(?:/|$) - [F,L,NC]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; media-src 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on' || req('X-Forwarded-Proto') == 'https'"
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "(^\.|^(?:composer\.(?:json|lock)|gera_hash\.php|pdo\.php|utils\.php|verifica_sessao\.php|teste_nfe\.xml|README\.md)$|\.(?:sql|env|ini|log|bak|dist|md|xml)$)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(^\.|^(?:composer\.(?:json|lock)|gera_hash\.php|pdo\.php|utils\.php|verifica_sessao\.php|teste_nfe\.xml|README\.md)$|\.(?:sql|env|ini|log|bak|dist|md|xml)$)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>

@@ -34,6 +34,9 @@ class RelatorioFinanceiro
         $resultado = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $linha) {
             $linha['total'] = (float)$linha['entradas'] + (float)$linha['saidas_caixa'];
+            $linha['faturamento'] = $linha['total']
+                - (float)$linha['saidas_caixa']
+                - (float)$linha['saidas_nao_caixa'];
             $resultado[$linha['data_ref']] = $linha;
         }
         $informados = $pdo->prepare('SELECT data_fechamento, total_dia_informado FROM fechamentos_diarios WHERE data_fechamento BETWEEN ? AND ? AND total_dia_informado IS NOT NULL');
@@ -42,7 +45,9 @@ class RelatorioFinanceiro
             $data = $linha['data_fechamento'];
             if (!isset($resultado[$data])) $resultado[$data] = ['data_ref'=>$data,'entradas'=>0,'saidas_caixa'=>0,'saidas_nao_caixa'=>0,'cartao'=>0,'total'=>0,'faturamento'=>0];
             $resultado[$data]['total'] = (float)$linha['total_dia_informado'];
-            $resultado[$data]['faturamento'] = (float)$linha['total_dia_informado'];
+            $resultado[$data]['faturamento'] = $resultado[$data]['total']
+                - (float)$resultado[$data]['saidas_caixa']
+                - (float)$resultado[$data]['saidas_nao_caixa'];
         }
         ksort($resultado);
         return $resultado;

@@ -68,6 +68,10 @@ try {
     $stmt = $pdo->prepare("UPDATE password_resets SET used_at = NOW() WHERE id = ?");
     $stmt->execute([$reset['id']]);
 
+    audit_log($pdo, 'alterar_senha', 'usuario', $reset['usuario_id'], [
+        'origem' => 'recuperacao_por_token',
+    ]);
+
     $pdo->commit();
 
     flash_set('sucesso', 'Senha atualizada com sucesso. Faca login novamente.');

@@ -32,6 +32,17 @@ define('DB_USER', env_value('DB_USER', ''));
 define('DB_PASS', env_value('DB_PASS', ''));
 define('BASE_URL', env_value('BASE_URL', 'http://localhost/Minha_loja-Api'));
 define('APP_ENV', env_value('APP_ENV', 'production'));
+define('APP_TIMEZONE', env_value('APP_TIMEZONE', 'America/Sao_Paulo'));
+
+try {
+    $appTimezone = new DateTimeZone(APP_TIMEZONE);
+    date_default_timezone_set(APP_TIMEZONE);
+} catch (Throwable $e) {
+    error_log('Fuso horario invalido em APP_TIMEZONE: ' . APP_TIMEZONE);
+    http_response_code(500);
+    die('Configuracao de fuso horario invalida.');
+}
+
 error_reporting(E_ALL);
 ini_set('display_errors', APP_ENV === 'development' ? '1' : '0');
 ini_set('log_errors', '1');
@@ -88,6 +99,11 @@ try {
         DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
+
+    // Usa o mesmo deslocamento do fuso do PHP sem depender das tabelas de timezone do MySQL.
+    $mysqlTimezoneOffset = (new DateTimeImmutable('now', $appTimezone))->format('P');
+    $stmtTimezone = $pdo->prepare('SET time_zone = ?');
+    $stmtTimezone->execute([$mysqlTimezoneOffset]);
 } catch (Throwable $e) {
     error_log('Erro ao inicializar o banco: ' . $e->getMessage());
     http_response_code(500);

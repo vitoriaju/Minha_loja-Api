@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../verifica_sessao.php';
+require_admin();
+
 require_once __DIR__ . '/../config/mailer.php';
 require_once __DIR__ . '/../utils.php';
 
@@ -14,12 +16,9 @@ if (!csrf_check($_POST['csrf_token'] ?? '')) {
     exit;
 }
 
-$isAdmin = !empty($_SESSION['usuario']) && (($_SESSION['perfil'] ?? '') === 'admin');
-
 $email = strtolower(trim($_POST['email'] ?? ''));
 $senha = trim($_POST['senha'] ?? '');
-// Usuario publico sempre nasce como user; apenas admin logado pode criar outro admin.
-$perfil = $isAdmin ? trim($_POST['perfil'] ?? 'user') : 'user';
+$perfil = trim($_POST['perfil'] ?? 'user');
 
 if (!$email || !$senha || !in_array($perfil, ['user', 'admin'], true)) {
     flash_set('erro', 'Preencha todos os campos corretamente.');
@@ -82,6 +81,11 @@ try {
     if (!enviar_email($email, $assunto, $mensagem, $mensagemHtml)) {
         throw new RuntimeException('Falha ao enviar e-mail de confirmacao.');
     }
+
+    audit_log($pdo, 'criar', 'usuario', $usuarioId, [
+        'email' => $email,
+        'perfil' => $perfil,
+    ]);
 
     $pdo->commit();
 

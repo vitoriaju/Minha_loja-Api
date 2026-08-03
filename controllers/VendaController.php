@@ -2,10 +2,6 @@
 require_once __DIR__ . '/../verifica_sessao.php';
 require_once __DIR__ . '/../pdo.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_check($_POST['csrf_token'] ?? '')) {
     header("Location: " . BASE_URL . "/views/vender.php");
     exit;
@@ -90,14 +86,19 @@ try {
         ");
         $stmt->execute([$venda_id, $produto_id, $quantidade, $preco]);
 
-        $novoEstoque = $produto['estoque'] - $quantidade;
+        // Baixa atomica: outra venda concorrente nao consegue usar o mesmo saldo.
+        $stmt = $pdo->prepare("
+            UPDATE produtos
+            SET estoque = estoque - ?
+            WHERE id = ? AND estoque >= ?
+        ");
+        $stmt->execute([$quantidade, $produto_id, $quantidade]);
 
-        if ($novoEstoque < 0) {
+        if ($stmt->rowCount() !== 1) {
             throw new Exception("Estoque insuficiente para o produto: " . $produto['nome']);
         }
 
-        $stmt = $pdo->prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
-        $stmt->execute([$novoEstoque, $produto_id]);
+        consumirLotesFefo($pdo, $produto_id, $quantidade, $produto['nome']);
 
         $totalVenda += $total;
     }
@@ -139,4 +140,39 @@ try {
     log_exception($e, 'Falha ao registrar venda');
     http_response_code(500);
     echo "Nao foi possivel registrar a venda.";
+}
+
+function consumirLotesFefo(PDO $pdo, int $produtoId, float $quantidade, string $produtoNome): void
+{
+    $stmt = $pdo->prepare("
+        SELECT id, quantidade_restante
+        FROM lotes_estoque
+        WHERE produto_id = ? AND quantidade_restante > 0
+        ORDER BY validade IS NULL, validade ASC, id ASC
+        FOR UPDATE
+    ");
+    $stmt->execute([$produtoId]);
+    $restante = $quantidade;
+    $stmtBaixa = $pdo->prepare("
+        UPDATE lotes_estoque
+        SET quantidade_restante = quantidade_restante - ?
+        WHERE id = ? AND quantidade_restante >= ?
+    ");
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $lote) {
+        if ($restante <= 0.000001) {
+            break;
+        }
+
+        $baixa = min($restante, (float) $lote['quantidade_restante']);
+        $stmtBaixa->execute([$baixa, $lote['id'], $baixa]);
+        if ($stmtBaixa->rowCount() !== 1) {
+            throw new RuntimeException('Conflito ao baixar lote do produto: ' . $produtoNome);
+        }
+        $restante -= $baixa;
+    }
+
+    if ($restante > 0.000001) {
+        throw new RuntimeException('Saldo por lote insuficiente para o produto: ' . $produtoNome);
+    }
 }

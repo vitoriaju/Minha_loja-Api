@@ -13,10 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_check($_POST['csrf_token'] ??
 
 if (isset($_POST['id']) && is_numeric($_POST['id'])) {
     $id = intval($_POST['id']);
+    $antes = $produto->buscarPorId($id);
     
    
     if ($produto->excluir($id)) {
-        audit_log($pdo, 'excluir', 'produto', $id, ['origem' => 'formulario']);
+        audit_log($pdo, 'excluir', 'produto', $id, ['origem' => 'formulario', 'antes' => $antes]);
         
         header("Location: listar_produtos_api.php");
         exit;

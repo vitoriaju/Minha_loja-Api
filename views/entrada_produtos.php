@@ -547,7 +547,7 @@ include __DIR__ . '/layout.php';
                     </div>
 
                     <div class="info-box">
-                        Ao registrar a nota, o sistema soma a quantidade ao estoque e atualiza o preço e a validade do produto.
+                        Ao registrar a nota, o sistema cria um lote com quantidade e validade próprias e atualiza o estoque total.
                     </div>
 
                     <button type="submit" class="btn-registrar">

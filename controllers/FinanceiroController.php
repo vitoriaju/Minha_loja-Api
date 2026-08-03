@@ -106,9 +106,10 @@ try {
             throw new Exception('Movimentação inválida.');
         }
 
-        $stmt = $pdo->prepare("SELECT data_movimento FROM movimentacoes_financeiras WHERE id = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT * FROM movimentacoes_financeiras WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
-        $data_movimento = $stmt->fetchColumn();
+        $antes = $stmt->fetch(PDO::FETCH_ASSOC);
+        $data_movimento = $antes['data_movimento'] ?? null;
 
         if (!$data_movimento) {
             throw new Exception('Movimentação não encontrada.');
@@ -119,7 +120,7 @@ try {
             WHERE id = ?
         ");
         $stmt->execute([$id]);
-        audit_log($pdo, 'excluir', 'movimentacao_financeira', $id);
+        audit_log($pdo, 'excluir', 'movimentacao_financeira', $id, ['antes' => $antes]);
 
         flash_set('sucesso', 'Movimentação excluída com sucesso.');
 

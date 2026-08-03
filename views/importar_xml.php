@@ -6,6 +6,9 @@ include __DIR__ . '/layout.php';
 
 $erro = flash_get('erro_xml');
 $sucesso = flash_get('sucesso_xml');
+$xmlMaxBytes = max(1024, (int) env_value('XML_MAX_BYTES', '2097152'));
+$xmlMaxItems = max(1, (int) env_value('XML_MAX_ITEMS', '500'));
+$xmlMaxMegabytes = number_format($xmlMaxBytes / 1048576, 1, ',', '.');
 ?>
 
 <div style="max-width:1100px; width:95%; margin:auto;">
@@ -39,6 +42,7 @@ $sucesso = flash_get('sucesso_xml');
 
         <form method="POST" action="../controllers/XmlNotaController.php?action=importar" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="MAX_FILE_SIZE" value="<?= $xmlMaxBytes ?>">
 
             <label style="display:block; font-weight:bold; margin-bottom:8px;">Arquivo XML da NF-e:</label>
 
@@ -46,7 +50,8 @@ $sucesso = flash_get('sucesso_xml');
                 <input type="file" name="xml_nota" accept=".xml,text/xml,application/xml" required style="background:white; padding:12px; border-radius:10px; width:100%; max-width:520px;">
 
                 <p style="margin-top:12px; color:#77563a; font-size:14px;">
-                    Use o arquivo XML original da nota fiscal eletrônica.
+                    Use o arquivo XML original da nota fiscal eletrônica, com no máximo
+                    <?= e($xmlMaxMegabytes) ?> MB e <?= $xmlMaxItems ?> itens.
                 </p>
             </div>
 

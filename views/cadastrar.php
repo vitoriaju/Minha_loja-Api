@@ -1,9 +1,11 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../verifica_sessao.php';
+require_admin();
+
 require_once __DIR__ . '/../utils.php';
 
-$logado = !empty($_SESSION['usuario']);
-$isAdmin = $logado && (($_SESSION['perfil'] ?? '') === 'admin');
+$logado = true;
+$isAdmin = true;
 
 $erro = flash_get('erro');
 $sucesso = flash_get('sucesso');

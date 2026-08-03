@@ -3,10 +3,6 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require_once __DIR__ . '/../config/config.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 if (empty($_SESSION['usuario'])) {
     http_response_code(401);
     echo json_encode([

@@ -131,7 +131,6 @@ $totalEntrouCartao = $totalVendasCartao + $totalEntradaManualCartao;
 $totalEntrouOutro = $totalVendasOutro + $totalEntradaManualOutro;
 
 $totalEntradas = $totalEntrouDinheiro + $totalEntrouPix + $totalEntrouCartao + $totalEntrouOutro;
-$totalMovimentado = $totalEntradas + $totalSaidasCaixa;
 $faturamentoDia = $totalVendas + $totalEntradasFechamentoManuais;
 $totalDiaInformado = $totalManha + $totalTarde;
 
@@ -430,15 +429,15 @@ textarea{
     <div class="cards-financeiro">
 
         <div class="card-financeiro borda-verde">
-            <span>Total Entradas</span>
+            <span>Entradas Recebidas</span>
             <strong>R$ <?= number_format($totalEntradas, 2, ',', '.') ?></strong>
-            <small>Soma de todas as entradas</small>
+            <small>Cartao, Pix, dinheiro e outras entradas</small>
         </div>
 
         <div class="card-financeiro" style="border-left-color:#3977b7">
-            <span>Total Cartão Dia</span>
+            <span>Cartão</span>
             <strong>R$ <?= number_format($totalEntrouCartao, 2, ',', '.') ?></strong>
-            <small>Somente cartões da data selecionada</small>
+            <small>Cartões da data selecionada</small>
         </div>
 
         <div class="card-financeiro borda-vermelha">
@@ -453,16 +452,10 @@ textarea{
             <small>Saidas fora do fechamento</small>
         </div>
 
-        <div class="card-financeiro">
-            <span>Total</span>
-            <strong>R$ <?= number_format($totalMovimentado, 2, ',', '.') ?></strong>
-            <small>Entradas + saidas do caixa</small>
-        </div>
-
         <div class="card-financeiro borda-verde">
-            <span>Total Dia</span>
+            <span>Faturamento do Dia</span>
             <strong>R$ <?= number_format($totalDiaExibido, 2, ',', '.') ?></strong>
-            <small>Faturamento pertencente ao dia</small>
+            <small>Entradas recebidas + retiradas do caixa</small>
         </div>
 
         <div class="card-financeiro"><span>Total Manha</span><strong>R$ <?= number_format($totalManhaExibido, 2, ',', '.') ?></strong><small>Total informado para a manha</small></div>

@@ -14,20 +14,21 @@ if (!in_array($dias_filtro, $dias_permitidos, true)) {
 }
 
 $where = [
-    "validade IS NOT NULL",
-    "validade >= CURDATE()",
-    "validade <= DATE_ADD(CURDATE(), INTERVAL {$dias_filtro} DAY)"
+    "l.quantidade_restante > 0",
+    "l.validade IS NOT NULL",
+    "l.validade >= CURDATE()",
+    "l.validade <= DATE_ADD(CURDATE(), INTERVAL {$dias_filtro} DAY)"
 ];
 
 $params = [];
 
 if ($busca !== '') {
-    $where[] = "nome LIKE ?";
+    $where[] = "p.nome LIKE ?";
     $params[] = "%{$busca}%";
 }
 
 if ($categoria !== '') {
-    $where[] = "categoria = ?";
+    $where[] = "p.categoria = ?";
     $params[] = $categoria;
 }
 
@@ -35,19 +36,20 @@ $whereSql = implode(" AND ", $where);
 
 $stmt = $pdo->prepare("
     SELECT 
-        id,
-        nome,
-        preco,
-        unidade_medida,
-        categoria,
-        validade,
-        estoque,
-        estoque_minimo,
-        DATEDIFF(validade, CURDATE()) AS dias_restantes,
-        (preco * estoque) AS valor_em_estoque
-    FROM produtos
+        l.id,
+        p.nome,
+        p.preco,
+        p.unidade_medida,
+        p.categoria,
+        l.validade,
+        l.quantidade_restante AS estoque,
+        p.estoque_minimo,
+        DATEDIFF(l.validade, CURDATE()) AS dias_restantes,
+        (p.preco * l.quantidade_restante) AS valor_em_estoque
+    FROM lotes_estoque l
+    JOIN produtos p ON p.id = l.produto_id
     WHERE {$whereSql}
-    ORDER BY validade ASC, nome ASC
+    ORDER BY l.validade ASC, p.nome ASC, l.id ASC
 ");
 
 $stmt->execute($params);

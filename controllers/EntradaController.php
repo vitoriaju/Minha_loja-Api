@@ -29,6 +29,12 @@ $stmt->execute([$numero_nota, $fornecedor]);
 
 $entrada_id = $pdo->lastInsertId();
 
+$stmtLote = $pdo->prepare("
+    INSERT INTO lotes_estoque
+    (item_entrada_id, produto_id, validade, quantidade_inicial, quantidade_restante)
+    VALUES (?, ?, ?, ?, ?)
+");
+
 foreach($_POST['produto_id'] as $i => $produto_id){
 
     $quantidade = $_POST['quantidade'][$i];
@@ -41,16 +47,24 @@ foreach($_POST['produto_id'] as $i => $produto_id){
     VALUES (?, ?, ?, ?, ?)
     ");
     $stmt->execute([$entrada_id, $produto_id, $quantidade, $validade, $preco]);
+    $itemEntradaId = $pdo->lastInsertId();
+
+    $stmtLote->execute([
+        $itemEntradaId,
+        $produto_id,
+        $validade !== '' ? $validade : null,
+        $quantidade,
+        $quantidade,
+    ]);
 
     // atualiza estoque e preço do produto
     $stmt = $pdo->prepare("
     UPDATE produtos 
     SET estoque = estoque + ?,
-        validade = ?,
         preco = ?
     WHERE id = ?
     ");
-    $stmt->execute([$quantidade, $validade, $preco, $produto_id]);
+    $stmt->execute([$quantidade, $preco, $produto_id]);
 
 }
 

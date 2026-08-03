@@ -35,10 +35,6 @@ CREATE TABLE IF NOT EXISTS `email_verifications` (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-UPDATE `usuarios`
-SET `email_verificado` = 1
-WHERE `email` IN ('admin@teste.com', 'admin@teste1.com', 'julia@gmail.com');
-
 UPDATE `usuarios` u
 JOIN `email_verifications` ev ON ev.usuario_id = u.id
 SET u.email_verificado = 0

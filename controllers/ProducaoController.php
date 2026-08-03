@@ -90,6 +90,13 @@ try {
         ");
         $stmt->execute([$quantidade, $produto_id]);
 
+        $stmt = $pdo->prepare("
+            INSERT INTO lotes_estoque
+            (item_entrada_id, produto_id, validade, quantidade_inicial, quantidade_restante, origem)
+            VALUES (NULL, ?, NULL, ?, ?, 'producao')
+        ");
+        $stmt->execute([$produto_id, $quantidade, $quantidade]);
+
         $itensValidos++;
     }
 

@@ -4,6 +4,9 @@ require_admin();
 require_once __DIR__ . '/../pdo.php';
 require_once __DIR__ . '/../utils.php';
 
+define('XML_MAX_BYTES', max(1024, (int) env_value('XML_MAX_BYTES', '2097152')));
+define('XML_MAX_ITEMS', max(1, (int) env_value('XML_MAX_ITEMS', '500')));
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . BASE_URL . '/views/importar_xml.php');
     exit;
@@ -29,6 +32,16 @@ try {
     flash_set('erro_xml', 'Ação inválida.');
     header('Location: ' . BASE_URL . '/views/importar_xml.php');
     exit;
+} catch (PDOException $e) {
+    log_exception($e, 'Falha de banco no processamento de XML');
+    flash_set('erro_xml', 'Nao foi possivel processar a nota XML. Tente novamente.');
+    header('Location: ' . BASE_URL . '/views/importar_xml.php');
+    exit;
+} catch (RuntimeException $e) {
+    log_exception($e, 'XML rejeitado');
+    flash_set('erro_xml', $e->getMessage());
+    header('Location: ' . BASE_URL . '/views/importar_xml.php');
+    exit;
 } catch (Throwable $e) {
     log_exception($e, 'Falha no processamento de XML');
     flash_set('erro_xml', 'Nao foi possivel processar a nota XML. Verifique o arquivo e tente novamente.');
@@ -38,15 +51,52 @@ try {
 
 function importarXmlNota(): void
 {
-    if (empty($_FILES['xml_nota']) || $_FILES['xml_nota']['error'] !== UPLOAD_ERR_OK) {
+    if (empty($_FILES['xml_nota'])) {
         throw new RuntimeException('Envie um arquivo XML válido.');
     }
 
     $arquivo = $_FILES['xml_nota'];
+    $uploadError = (int) ($arquivo['error'] ?? UPLOAD_ERR_NO_FILE);
+
+    if (in_array($uploadError, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+        throw new RuntimeException('O arquivo XML excede o limite de tamanho permitido.');
+    }
+
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Nao foi possivel receber o arquivo XML.');
+    }
+
     $extensao = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
 
     if ($extensao !== 'xml') {
         throw new RuntimeException('O arquivo precisa estar no formato .xml.');
+    }
+
+    $tamanhoInformado = (int) ($arquivo['size'] ?? 0);
+    $tamanhoReal = filesize($arquivo['tmp_name']);
+
+    if ($tamanhoInformado <= 0 || $tamanhoReal === false || $tamanhoReal <= 0) {
+        throw new RuntimeException('O arquivo XML esta vazio ou nao pode ser lido.');
+    }
+
+    if ($tamanhoInformado > XML_MAX_BYTES || $tamanhoReal > XML_MAX_BYTES) {
+        throw new RuntimeException('O arquivo XML excede o limite de tamanho permitido.');
+    }
+
+    if (!is_uploaded_file($arquivo['tmp_name'])) {
+        throw new RuntimeException('O arquivo recebido nao e um upload HTTP valido.');
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    if ($finfo === false) {
+        throw new RuntimeException('Nao foi possivel verificar o tipo real do arquivo.');
+    }
+
+    $mimeType = finfo_file($finfo, $arquivo['tmp_name']);
+    finfo_close($finfo);
+
+    if (!in_array($mimeType, ['application/xml', 'text/xml'], true)) {
+        throw new RuntimeException('O conteudo enviado nao foi reconhecido como XML.');
     }
 
     $conteudo = file_get_contents($arquivo['tmp_name']);
@@ -91,6 +141,10 @@ $novosPrecosVenda = $_POST['novo_preco_venda'] ?? [];
         throw new RuntimeException('Nenhum produto foi informado para finalizar a nota.');
     }
 
+    if (count($produtoIds) > XML_MAX_ITEMS || count($nota['itens'] ?? []) > XML_MAX_ITEMS) {
+        throw new RuntimeException('A nota excede o limite de itens permitido.');
+    }
+
     $pdo->beginTransaction();
 
     try {
@@ -121,10 +175,15 @@ $novosPrecosVenda = $_POST['novo_preco_venda'] ?? [];
             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
+        $stmtLote = $pdo->prepare("
+            INSERT INTO lotes_estoque
+            (item_entrada_id, produto_id, validade, quantidade_inicial, quantidade_restante)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+
         $stmtEstoque = $pdo->prepare("
             UPDATE produtos
-            SET estoque = estoque + ?,
-                validade = COALESCE(?, validade)
+            SET estoque = estoque + ?
             WHERE id = ?
         ");
 
@@ -185,8 +244,17 @@ $novosPrecosVenda = $_POST['novo_preco_venda'] ?? [];
                 trim($unidadesXml[$i] ?? '') ?: null,
                 $valorItem,
             ]);
+            $itemEntradaId = $pdo->lastInsertId();
 
-            $stmtEstoque->execute([$quantidade, $validadeBanco, $produtoId]);
+            $stmtLote->execute([
+                $itemEntradaId,
+                $produtoId,
+                $validadeBanco,
+                $quantidade,
+                $quantidade,
+            ]);
+
+            $stmtEstoque->execute([$quantidade, $produtoId]);
 
             if ($codigoXml !== '') {
                 $stmtVinculo->execute([
@@ -219,17 +287,31 @@ $novosPrecosVenda = $_POST['novo_preco_venda'] ?? [];
 
 function extrairDadosNfe(string $conteudoXml): array
 {
-    libxml_use_internal_errors(true);
+    if (preg_match('/<!\s*(?:DOCTYPE|ENTITY)\b/i', $conteudoXml)) {
+        throw new RuntimeException('XML com DTD ou declaracao de entidade nao e permitido.');
+    }
+
+    $internalErrorsAnterior = libxml_use_internal_errors(true);
 
     $dom = new DOMDocument();
     $dom->preserveWhiteSpace = false;
 
-    if (!$dom->loadXML($conteudoXml)) {
+    if (!$dom->loadXML($conteudoXml, LIBXML_NONET | LIBXML_NOBLANKS)) {
         $erros = libxml_get_errors();
         libxml_clear_errors();
+        libxml_use_internal_errors($internalErrorsAnterior);
         $mensagem = !empty($erros) ? trim($erros[0]->message) : 'XML inválido.';
         throw new RuntimeException('Não foi possível interpretar o XML: ' . $mensagem);
     }
+
+    if ($dom->doctype !== null) {
+        libxml_clear_errors();
+        libxml_use_internal_errors($internalErrorsAnterior);
+        throw new RuntimeException('XML com DTD nao e permitido.');
+    }
+
+    libxml_clear_errors();
+    libxml_use_internal_errors($internalErrorsAnterior);
 
     $xpath = new DOMXPath($dom);
 
@@ -257,6 +339,10 @@ function extrairDadosNfe(string $conteudoXml): array
 
     $itens = [];
     $detNodes = $xpath->query('./*[local-name()="det"]', $infNfe);
+
+    if ($detNodes === false || $detNodes->length > XML_MAX_ITEMS) {
+        throw new RuntimeException('A nota excede o limite de itens permitido.');
+    }
 
     foreach ($detNodes as $det) {
         if (!$det instanceof DOMElement) {

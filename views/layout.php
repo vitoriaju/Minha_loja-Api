@@ -1,10 +1,6 @@
 <?php
 require_once __DIR__ . '/../utils.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $usuario_email = $_SESSION['usuario']['email'] ?? 'Usuário';
 $usuario_nome = $_SESSION['usuario']['nome'] ?? $usuario_email;
 $perfil_usuario = $_SESSION['perfil'] ?? 'user';
@@ -326,6 +322,10 @@ th{
               <a class="menu-link<?= $ativo('producao_dia.php') ?>" href="producao_dia.php">Produção</a>
 
                 <a class="menu-link<?= in_array($pagina_atual, ['financeiro.php','financeiro_mensal.php','financeiro_anual.php'], true) ? ' active' : '' ?>" href="financeiro.php">Financeiro</a>
+
+                <?php if ($perfil_usuario === 'admin'): ?>
+                    <a class="menu-link<?= $ativo('auditoria.php') ?>" href="auditoria.php">Auditoria</a>
+                <?php endif; ?>
 
             
 

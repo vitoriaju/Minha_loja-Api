@@ -70,13 +70,14 @@ try {
         Assim você pode gerar de novo se tiver feito uma venda depois.
     */
     $stmt = $pdo->prepare("
-        SELECT id 
+        SELECT *
         FROM fechamentos_diarios 
         WHERE data_fechamento = ?
         LIMIT 1
     ");
     $stmt->execute([$dataFechamento]);
     $fechamentoExistente = $stmt->fetch();
+    $estadoAnterior = $fechamentoExistente ?: null;
 
     if ($fechamentoExistente) {
 
@@ -213,7 +214,11 @@ try {
         ]);
     }
 
-    audit_log($pdo, $fechamentoExistente ? 'editar' : 'criar', 'fechamento', $fechamentoId, ['data' => $dataFechamento]);
+    audit_log($pdo, $fechamentoExistente ? 'editar' : 'criar', 'fechamento', $fechamentoId, [
+        'data' => $dataFechamento,
+        'antes' => $estadoAnterior,
+        'depois' => $resumo,
+    ]);
     $pdo->commit();
 
     flash_set('sucesso', 'Fechamento diário gerado com sucesso.');

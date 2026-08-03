@@ -19,12 +19,27 @@ class Produto {
     }
 
     public function cadastrar($nome, $preco, $categoria, $validade, $estoque, $unidade): bool {
-        $stmt = $this->pdo->prepare("
-            INSERT INTO produtos (nome, preco, categoria, validade, estoque, unidade_medida)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-
-        return $stmt->execute([$nome, $preco, $categoria, $validade, $estoque, $unidade]);
+        try {
+            $this->pdo->beginTransaction();
+            $stmt = $this->pdo->prepare("
+                INSERT INTO produtos (nome, preco, categoria, validade, estoque, unidade_medida)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$nome, $preco, $categoria, $validade, $estoque, $unidade]);
+            $produtoId = (int) $this->pdo->lastInsertId();
+            if ((float) $estoque > 0) {
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO lotes_estoque
+                    (item_entrada_id, produto_id, validade, quantidade_inicial, quantidade_restante, origem)
+                    VALUES (NULL, ?, ?, ?, ?, 'cadastro')
+                ");
+                $stmt->execute([$produtoId, $validade ?: null, $estoque, $estoque]);
+            }
+            return $this->pdo->commit();
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            return false;
+        }
     }
 
     public function atualizar($id, $dados): bool {
@@ -33,8 +48,6 @@ class Produto {
                 nome = ?,
                 preco = ?,
                 categoria = ?,
-                validade = ?,
-                estoque = ?,
                 unidade_medida = ?
             WHERE id = ?
         ");
@@ -43,8 +56,6 @@ class Produto {
             $dados['nome'],
             $dados['preco'],
             $dados['categoria'] ?? null,
-            $dados['validade'] ?? null,
-            $dados['estoque'],
             $dados['unidade_medida'] ?? 'unidade',
             (int) $id
         ]);
@@ -56,7 +67,11 @@ class Produto {
     }
 
     public function listarVencidos(): array {
-        $stmt = $this->pdo->prepare("SELECT * FROM produtos WHERE validade < ?");
+        $stmt = $this->pdo->prepare("
+            SELECT p.*, l.id AS lote_id, l.validade, l.quantidade_restante
+            FROM lotes_estoque l JOIN produtos p ON p.id = l.produto_id
+            WHERE l.quantidade_restante > 0 AND l.validade < ?
+        ");
         $stmt->execute([date('Y-m-d')]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

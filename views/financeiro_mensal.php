@@ -14,8 +14,8 @@ for ($dia = 1, $qtd = (int)date('t', strtotime($inicio)); $dia <= $qtd; $dia++) 
 $totais = RelatorioFinanceiro::totais($linhas);
 if (($_GET['export'] ?? '') === 'csv') {
     header('Content-Type: text/csv; charset=UTF-8'); header('Content-Disposition: attachment; filename="financeiro-' . $mes . '.csv"');
-    echo "\xEF\xBB\xBF"; $out=fopen('php://output','w'); fputcsv($out,['Dia','Entradas','Saidas caixa','Saidas nao caixa','Cartao','Total','Faturamento'],';');
-    foreach($linhas as $l) fputcsv($out,[date('d/m/Y',strtotime($l['data_ref'])),number_format((float)$l['entradas'],2,',','.'),number_format((float)$l['saidas_caixa'],2,',','.'),number_format((float)$l['saidas_nao_caixa'],2,',','.'),number_format((float)$l['cartao'],2,',','.'),number_format((float)$l['total'],2,',','.'),number_format((float)$l['faturamento'],2,',','.')],';');
+    echo "\xEF\xBB\xBF"; $out=fopen('php://output','w'); fputcsv($out,['Dia','Entradas','Saidas caixa','Saidas nao caixa','Cartao','Total','Faturamento'],';','"','');
+    foreach($linhas as $l) fputcsv($out,[date('d/m/Y',strtotime($l['data_ref'])),number_format((float)$l['entradas'],2,',','.'),number_format((float)$l['saidas_caixa'],2,',','.'),number_format((float)$l['saidas_nao_caixa'],2,',','.'),number_format((float)$l['cartao'],2,',','.'),number_format((float)$l['total'],2,',','.'),number_format((float)$l['faturamento'],2,',','.')],';','"','');
     fclose($out); exit;
 }
 include __DIR__ . '/layout.php';

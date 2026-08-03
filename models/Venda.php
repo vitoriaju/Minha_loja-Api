@@ -48,10 +48,22 @@ class Venda {
                     $produto['preco']
                 ]);
 
-                $novoEstoque = $produto['estoque'] - $item['quantidade'];
+                $stmt = $pdo->prepare("
+                    UPDATE produtos
+                    SET estoque = estoque - ?
+                    WHERE id = ? AND estoque >= ?
+                ");
+                $stmt->execute([
+                    $item['quantidade'],
+                    $item['produto_id'],
+                    $item['quantidade']
+                ]);
 
-                $stmt = $pdo->prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
-                $stmt->execute([$novoEstoque, $item['produto_id']]);
+                if ($stmt->rowCount() !== 1) {
+                    throw new Exception("Estoque insuficiente");
+                }
+
+                self::consumirLotesFefo((int) $item['produto_id'], (float) $item['quantidade']);
             }
 
             $pdo->commit();
@@ -61,5 +73,34 @@ class Venda {
             $pdo->rollBack();
             return $e->getMessage();
         }
+    }
+
+    private static function consumirLotesFefo(int $produtoId, float $quantidade): void {
+        global $pdo;
+
+        $stmt = $pdo->prepare("
+            SELECT id, quantidade_restante
+            FROM lotes_estoque
+            WHERE produto_id = ? AND quantidade_restante > 0
+            ORDER BY validade IS NULL, validade ASC, id ASC
+            FOR UPDATE
+        ");
+        $stmt->execute([$produtoId]);
+        $restante = $quantidade;
+        $baixa = $pdo->prepare("
+            UPDATE lotes_estoque
+            SET quantidade_restante = quantidade_restante - ?
+            WHERE id = ? AND quantidade_restante >= ?
+        ");
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $lote) {
+            if ($restante <= 0.000001) break;
+            $quantidadeLote = min($restante, (float) $lote['quantidade_restante']);
+            $baixa->execute([$quantidadeLote, $lote['id'], $quantidadeLote]);
+            if ($baixa->rowCount() !== 1) throw new Exception('Conflito ao baixar lote');
+            $restante -= $quantidadeLote;
+        }
+
+        if ($restante > 0.000001) throw new Exception('Saldo por lote insuficiente');
     }
 }

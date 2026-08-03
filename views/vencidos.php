@@ -8,47 +8,50 @@ $categoria = trim($_GET['categoria'] ?? '');
 $ordenar = $_GET['ordenar'] ?? 'mais_antigo';
 
 $where = [
-    "validade IS NOT NULL",
-    "validade < CURDATE()"
+    "l.quantidade_restante > 0",
+    "l.validade IS NOT NULL",
+    "l.validade < CURDATE()"
 ];
 
 $params = [];
 
 if ($busca !== '') {
-    $where[] = "nome LIKE ?";
+    $where[] = "p.nome LIKE ?";
     $params[] = "%{$busca}%";
 }
 
 if ($categoria !== '') {
-    $where[] = "categoria = ?";
+    $where[] = "p.categoria = ?";
     $params[] = $categoria;
 }
 
-$orderSql = "validade ASC";
+$orderSql = "l.validade ASC";
 
 if ($ordenar === 'nome') {
-    $orderSql = "nome ASC";
+    $orderSql = "p.nome ASC";
 } elseif ($ordenar === 'estoque') {
-    $orderSql = "estoque DESC";
+    $orderSql = "l.quantidade_restante DESC";
 } elseif ($ordenar === 'valor') {
-    $orderSql = "(preco * estoque) DESC";
+    $orderSql = "(p.preco * l.quantidade_restante) DESC";
 }
 
 $whereSql = implode(" AND ", $where);
 
 $stmt = $pdo->prepare("
     SELECT 
-        id,
-        nome,
-        preco,
-        unidade_medida,
-        categoria,
-        validade,
-        estoque,
-        estoque_minimo,
-        DATEDIFF(CURDATE(), validade) AS dias_vencido,
-        (preco * estoque) AS valor_em_estoque
-    FROM produtos
+        l.id,
+        l.produto_id,
+        p.nome,
+        p.preco,
+        p.unidade_medida,
+        p.categoria,
+        l.validade,
+        l.quantidade_restante AS estoque,
+        p.estoque_minimo,
+        DATEDIFF(CURDATE(), l.validade) AS dias_vencido,
+        (p.preco * l.quantidade_restante) AS valor_em_estoque
+    FROM lotes_estoque l
+    JOIN produtos p ON p.id = l.produto_id
     WHERE {$whereSql}
     ORDER BY {$orderSql}
 ");
@@ -58,12 +61,14 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $stmtCategorias = $pdo->query("
     SELECT DISTINCT categoria
-    FROM produtos
-    WHERE categoria IS NOT NULL
-    AND categoria <> ''
-    AND validade IS NOT NULL
-    AND validade < CURDATE()
-    ORDER BY categoria ASC
+    FROM produtos p
+    JOIN lotes_estoque l ON l.produto_id = p.id
+    WHERE p.categoria IS NOT NULL
+    AND p.categoria <> ''
+    AND l.quantidade_restante > 0
+    AND l.validade IS NOT NULL
+    AND l.validade < CURDATE()
+    ORDER BY p.categoria ASC
 ");
 
 $categorias = $stmtCategorias->fetchAll(PDO::FETCH_COLUMN);
@@ -716,7 +721,7 @@ include __DIR__ . '/layout.php';
                                                 class="venc-btn venc-btn-danger"
                                                 onclick='abrirModalExcluir(<?= (int)$p["id"] ?>, <?= $nomeJson ?>)'
                                             >
-                                                Excluir
+                                                Baixar lote
                                             </button>
                                         </div>
                                     </td>
@@ -745,16 +750,16 @@ include __DIR__ . '/layout.php';
 <div id="modal-delete" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-header">
-            <h3>Excluir produto</h3>
+            <h3>Baixar lote vencido</h3>
             <button type="button" class="modal-close" onclick="fecharModalExcluir()">×</button>
         </div>
 
         <div class="modal-body">
             <p>
-                Tem certeza que deseja excluir o produto
+                Tem certeza que deseja baixar todo o saldo vencido de
                 <strong id="delete-produto-nome"></strong>?
                 <br>
-                Essa ação remove o cadastro do produto.
+                O cadastro do produto e os demais lotes serão preservados.
             </p>
 
             <input type="hidden" id="delete-produto-id">
@@ -765,7 +770,7 @@ include __DIR__ . '/layout.php';
                 </button>
 
                 <button type="button" class="venc-btn venc-btn-danger" onclick="confirmarExclusao()">
-                    Excluir
+                    Baixar lote
                 </button>
             </div>
         </div>
@@ -774,7 +779,7 @@ include __DIR__ . '/layout.php';
 
 <script>
 const CSRF_TOKEN = "<?= e(csrf_token()) ?>";
-const API = "../api/produtos.php";
+const API = "../api/lotes.php";
 
 function mostrarToast(mensagem, tipo = ""){
     const toast = document.getElementById("toast");
@@ -824,18 +829,18 @@ async function confirmarExclusao(){
             }
 
             fecharModalExcluir();
-            mostrarToast("Produto excluído com sucesso.", "success");
+            mostrarToast("Lote vencido baixado com sucesso.", "success");
 
             setTimeout(() => {
                 window.location.reload();
             }, 800);
 
         }else{
-            mostrarToast(data.msg || "Erro ao excluir produto.", "error");
+            mostrarToast(data.msg || "Erro ao baixar lote.", "error");
         }
 
     }catch(e){
-        mostrarToast("Não foi possível excluir. O produto pode estar vinculado a vendas ou entradas.", "error");
+        mostrarToast("Não foi possível baixar o lote vencido.", "error");
     }
 }
 

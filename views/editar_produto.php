@@ -23,7 +23,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $produto->atualizar($id, $_POST);
-    audit_log($pdo, 'editar', 'produto', (int) $id, ['origem' => 'formulario']);
+    audit_log($pdo, 'editar', 'produto', (int) $id, [
+        'origem' => 'formulario',
+        'antes' => $dados,
+        'depois' => [
+            'nome' => $_POST['nome'] ?? '',
+            'preco' => $_POST['preco'] ?? '',
+            'categoria' => $_POST['categoria'] ?? '',
+            'unidade_medida' => $_POST['unidade_medida'] ?? '',
+        ],
+    ]);
     header("Location: listar_produtos_api.php");
     exit;
 }
@@ -143,12 +152,6 @@ button:hover {
 
     <label>Categoria:</label>
     <input type="text" name="categoria" value="<?= $dados['categoria'] ?>">
-
-    <label>Data de Validade:</label>
-    <input type="date" name="validade" value="<?= $dados['validade'] ?>">
-
-    <label>Quantidade em Estoque:</label>
-    <input type="number" name="estoque" value="<?= $dados['estoque'] ?>" required>
 
     <button type="submit"> Atualizar Produto</button>
 

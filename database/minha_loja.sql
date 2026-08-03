@@ -1,9 +1,12 @@
+-- ATENCAO: INSTALACAO LIMPA APENAS. ESTE ARQUIVO CONTEM DROP TABLE.
+-- NUNCA execute sobre uma base existente ou sobre os dados de producao.
+-- Atualizacoes devem usar exclusivamente migrations incrementais revisadas.
 -- Dump completo do banco `minha_loja2`
 -- Compatível com o codigo PHP atual do projeto.
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "+00:00";
+SET time_zone = "-03:00";
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -22,6 +25,7 @@ DROP TABLE IF EXISTS `producao`;
 DROP TABLE IF EXISTS `itens_fechamento`;
 DROP TABLE IF EXISTS `fechamentos_diarios`;
 DROP TABLE IF EXISTS `produto_xml_vinculos`;
+DROP TABLE IF EXISTS `lotes_estoque`;
 DROP TABLE IF EXISTS `itens_entrada`;
 DROP TABLE IF EXISTS `entradas`;
 DROP TABLE IF EXISTS `itens_venda`;
@@ -82,11 +86,6 @@ CREATE TABLE `movimentacoes_financeiras` (
   KEY `idx_mov_fin_turno` (`data_movimento`, `turno`),
   KEY `idx_mov_fin_fechamento` (`data_movimento`, `incluir_fechamento`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `usuarios` (`id`, `nome`, `email`, `senha`, `senha_hash`, `perfil`, `email_verificado`, `criado_em`) VALUES
-(5, 'Julia', 'julia@gmail.com', NULL, '$2y$10$CFJi1JY/nb8gbUGkDL/UrOHa5Oxn7anwkocQ0RnwtnSB.DwX1pNsm', 'user', 1, NOW()),
-(6, 'Usuario Teste', 'admin@teste.com', NULL, '$2y$10$Ku8tfCOkwf.wS.DReGslX.SMuvyHvNXT46RVK8ewHwieBKdv1Aygq', 'user', 1, NOW()),
-(7, 'Admin Teste', 'admin@teste1.com', NULL, '$2y$10$job9jMUhEIs1Tmw8abfFKuMLpCGumY34vt5HfGG9GVMcuuRG.PGfu', 'admin', 1, NOW());
 
 CREATE TABLE `email_verifications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -227,6 +226,30 @@ CREATE TABLE `itens_entrada` (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `lotes_estoque` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `item_entrada_id` int(11) DEFAULT NULL,
+  `produto_id` int(11) NOT NULL,
+  `validade` date DEFAULT NULL,
+  `quantidade_inicial` decimal(10,3) NOT NULL,
+  `quantidade_restante` decimal(10,3) NOT NULL,
+  `origem` enum('entrada','migracao','producao','cadastro') NOT NULL DEFAULT 'entrada',
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_lotes_item_entrada` (`item_entrada_id`),
+  KEY `idx_lotes_produto_saldo_validade` (`produto_id`, `quantidade_restante`, `validade`),
+  KEY `idx_lotes_validade_saldo` (`validade`, `quantidade_restante`),
+  CONSTRAINT `fk_lotes_item_entrada` FOREIGN KEY (`item_entrada_id`) REFERENCES `itens_entrada` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_lotes_produto` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `chk_lotes_quantidades` CHECK (`quantidade_inicial` >= 0 AND `quantidade_restante` >= 0 AND `quantidade_restante` <= `quantidade_inicial`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `lotes_estoque`
+  (`item_entrada_id`, `produto_id`, `validade`, `quantidade_inicial`, `quantidade_restante`, `origem`)
+SELECT NULL, p.id, p.validade, p.estoque, p.estoque, 'migracao'
+FROM produtos p
+WHERE p.estoque > 0;
+
 CREATE TABLE `produto_xml_vinculos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `cnpj_fornecedor` varchar(20) NOT NULL DEFAULT '',
@@ -309,7 +332,18 @@ CREATE TABLE `itens_producao` (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE `usuarios` AUTO_INCREMENT = 8;
+CREATE TABLE `login_attempts` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `email_hash` char(64) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `attempted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_login_attempts_email_time` (`email_hash`, `attempted_at`),
+  KEY `idx_login_attempts_ip_time` (`ip`, `attempted_at`),
+  KEY `idx_login_attempts_time` (`attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `usuarios` AUTO_INCREMENT = 1;
 ALTER TABLE `produtos` AUTO_INCREMENT = 9;
 
 COMMIT;

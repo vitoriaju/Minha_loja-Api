@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/utils.php';
 
@@ -527,14 +525,6 @@ body{
                     Entrar no sistema
                 </button>
             </form>
-
-            <div class="divider">
-                ou
-            </div>
-
-            <a href="views/cadastrar.php" class="create-account">
-                Criar nova conta
-            </a>
 
             <div class="security-note">
                 Por segurança, confirme seu e-mail antes de acessar o sistema.

@@ -2,12 +2,42 @@
 
 ## Configuracao segura
 
+> **Atualização de banco:** nunca execute `database/minha_loja.sql` sobre uma
+> base existente. Ele contém `DROP TABLE` e serve somente para instalação limpa.
+> A base com dados reais é a fonte principal. Antes de atualizar: gere duas
+> cópias do backup, restaure uma base de teste, aplique somente migrations sem
+> `DROP`, confira contagens e totais e só então repita na hospedagem.
+
 Copie `.env.example` para `.env` e use credenciais exclusivas da aplicacao. O arquivo `.env` nunca deve ser distribuido ou incluido em ZIPs; se ele ja foi compartilhado, troque as senhas do banco e principalmente a senha SMTP.
 
-Em producao, publique somente por HTTPS e configure `APP_ENV=production`, `BASE_URL` com `https://` e `SESSION_SECURE=true`. Para atualizar uma base existente, execute `database/migration_seguranca.sql`. O script tambem traz, como comentarios, um exemplo para criar um usuario MySQL com permissoes limitadas.
+Os registros de auditoria são mantidos por 365 dias por padrão. Ajuste somente se
+a política da empresa exigir outro período, usando `AUDIT_RETENTION_DAYS` (mínimo de 30 dias).
 
-Um sistema simples e funcional de gerenciamento para uma padaria online, desenvolvido em PHP, MySQL e utilizando uma estrutura MVC organizada.
+Em producao, publique somente por HTTPS e configure `APP_ENV=production`, `APP_TIMEZONE=America/Sao_Paulo`, `BASE_URL` com `https://` e `SESSION_SECURE=true`. Para atualizar uma base existente, execute `database/migration_seguranca.sql`, `database/2026_08_03_create_login_attempts.sql` e `database/2026_08_03_create_lotes_estoque.sql`. Os scripts tambem trazem os controles persistentes de seguranca usados pela aplicacao.
+
+Um sistema simples e funcional de gerenciamento para uma padaria online, desenvolvido em PHP 8.4, MySQL e utilizando uma estrutura MVC organizada.
 O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicação mais flexível, segura e preparada para integrações como Postman, JavaScript (fetch), apps mobile e dashboards.
+
+### Pacote de producao
+
+Gere o pacote publico com:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-production.ps1
+```
+
+O arquivo resultante fica em `dist/minha-loja-production.zip`. O empacotador usa uma lista explicita de arquivos permitidos e valida que `.env`, `.git`, banco, SQL, documentacao, migrations, contas de teste e ferramentas auxiliares nao estejam no ZIP. Configure os segredos como variaveis de ambiente no servidor ou envie o `.env` separadamente por um canal seguro; nunca o inclua no pacote publico.
+
+Antes de publicar, selecione a versão estável mais recente do PHP 8.4 na hospedagem
+e execute com esse mesmo binário:
+
+```bash
+php scripts/check-php84.php
+```
+
+O verificador recusa versões diferentes de PHP 8.4 e valida a sintaxe de todos os
+arquivos PHP da aplicação. As extensões necessárias são PDO MySQL, DOM, libxml,
+Fileinfo, OpenSSL e mbstring.
 
 ---
 ###  Funcionalidades Principais
@@ -22,7 +52,7 @@ O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicaç
 ---
  ### Tecnologias Utilizadas:
 
-- PHP 
+- PHP 8.4 atualizado
 - MySQL / phpMyAdmin
 - Apache (XAMPP)
 - PDO – PHP Data Objects
@@ -31,7 +61,7 @@ O projeto agora possui uma API interna que moderniza o CRUD, tornando a aplicaç
 ---
 ###  Requisitos:
 
-- PHP 
+- PHP 8.4 com PDO MySQL, DOM, libxml, Fileinfo, OpenSSL e mbstring
 - Apache habilitado
 - MySQL / phpMyAdmin
 - Navegador atualizado
@@ -52,15 +82,18 @@ CREATE DATABASE minha_loja2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 Depois importe o arquivo SQL: minha_loja.sql
 
- Usuários de Teste:
- 
-| Tipo  | E-mail             | Senha   |
-|-------|---------------------|---------|
-| User  | admin@teste.com     | 123     |
-| Admin | admin@teste1.com    | 123456  |
+O arquivo SQL não inclui usuários ou senhas. Depois da importação, provisione a
+única conta administrativa pelo terminal. O comando substitui todas as contas
+existentes e gera uma senha forte quando `ADMIN_INITIAL_PASSWORD` não for informado:
 
+```powershell
+$env:ADMIN_NAME='Julia'
+$env:ADMIN_EMAIL='julia12scosta@gmail.com'
+C:\xampp\php\php.exe .\scripts\provision-admin.php --replace-all-users
+```
 
-Esses usuários já estão incluídos no arquivo .sql.
+Guarde a senha exibida em um gerenciador de senhas e remova as variáveis do
+terminal depois do provisionamento.
 
 ---
 

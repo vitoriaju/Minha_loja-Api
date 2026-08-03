@@ -3,3 +3,5 @@
 !.env.example
 docs/docs.md
 vendor/
+/dist/
+/backups/

@@ -1,9 +1,4 @@
 <?php
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 
@@ -51,21 +46,25 @@ $alertas_estoque = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $total_alertas = count($alertas_estoque);
 
 $stmt = $pdo->query("
-    SELECT nome, validade
-    FROM produtos
-    WHERE validade IS NOT NULL
-    AND validade < CURDATE()
-    ORDER BY validade ASC
+    SELECT p.nome, l.validade
+    FROM lotes_estoque l
+    JOIN produtos p ON p.id = l.produto_id
+    WHERE l.quantidade_restante > 0
+    AND l.validade IS NOT NULL
+    AND l.validade < CURDATE()
+    ORDER BY l.validade ASC
 ");
 $vencidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $total_vencidos = count($vencidos);
 
 $stmt = $pdo->query("
-    SELECT nome, validade
-    FROM produtos
-    WHERE validade IS NOT NULL
-    AND validade BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-    ORDER BY validade ASC
+    SELECT p.nome, l.validade
+    FROM lotes_estoque l
+    JOIN produtos p ON p.id = l.produto_id
+    WHERE l.quantidade_restante > 0
+    AND l.validade IS NOT NULL
+    AND l.validade BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+    ORDER BY l.validade ASC
 ");
 $vencer = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $total_vencer = count($vencer);

@@ -510,15 +510,6 @@ include __DIR__ . '/layout.php';
                         <input type="text" name="categoria" id="edit-categoria">
                     </div>
 
-                    <div class="form-group">
-                        <label>Validade</label>
-                        <input type="date" name="validade" id="edit-validade">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Estoque</label>
-                        <input type="number" name="estoque" id="edit-estoque" step="0.001" min="0" required>
-                    </div>
                 </div>
 
                 <div class="modal-actions">
@@ -838,8 +829,6 @@ function abrirModalEditar(id){
     document.getElementById("edit-preco").value = p.preco || "";
     document.getElementById("edit-unidade").value = p.unidade_medida || "unidade";
     document.getElementById("edit-categoria").value = p.categoria || "";
-    document.getElementById("edit-validade").value = p.validade || "";
-    document.getElementById("edit-estoque").value = p.estoque || "";
 
     document.getElementById("modal-edit").style.display = "flex";
 }

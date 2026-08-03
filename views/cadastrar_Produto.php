@@ -58,6 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $tipo_mensagem = "erro";
         } else {
             try {
+                $pdo->beginTransaction();
                 $stmt = $pdo->prepare("
                     INSERT INTO produtos 
                     (nome, preco, categoria, validade, estoque, estoque_minimo, unidade_medida, criado_em)
@@ -75,7 +76,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 ]);
 
                 if ($ok) {
-                    audit_log($pdo, 'criar', 'produto', (int) $pdo->lastInsertId());
+                    $produtoId = (int) $pdo->lastInsertId();
+                    if ($estoque > 0) {
+                        $stmtLote = $pdo->prepare("
+                            INSERT INTO lotes_estoque
+                            (item_entrada_id, produto_id, validade, quantidade_inicial, quantidade_restante, origem)
+                            VALUES (NULL, ?, ?, ?, ?, 'cadastro')
+                        ");
+                        $stmtLote->execute([$produtoId, $validade, $estoque, $estoque]);
+                    }
+                    audit_log($pdo, 'criar', 'produto', $produtoId);
+                    $pdo->commit();
                     $mensagem = "Produto cadastrado com sucesso!";
                     $tipo_mensagem = "sucesso";
 
@@ -89,11 +100,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         'estoque_minimo' => '5'
                     ];
                 } else {
+                    $pdo->rollBack();
                     $mensagem = "Erro ao cadastrar produto.";
                     $tipo_mensagem = "erro";
                 }
 
             } catch (Exception $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
                 $mensagem = "Erro ao cadastrar produto.";
                 $tipo_mensagem = "erro";
             }
