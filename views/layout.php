@@ -52,7 +52,13 @@ $modulos = [
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Minha Loja</title>
 <link rel="stylesheet" href="<?= e(BASE_URL) ?>/assets/painel.css">
+<?php foreach (($page_styles ?? []) as $page_style): ?>
+<link rel="stylesheet" href="<?= e(BASE_URL) ?>/<?= e(ltrim($page_style, '/')) ?>">
+<?php endforeach; ?>
 <script defer src="<?= e(BASE_URL) ?>/assets/painel.js"></script>
+<?php foreach (($page_scripts ?? []) as $page_script): ?>
+<script defer src="<?= e(BASE_URL) ?>/<?= e(ltrim($page_script, '/')) ?>"></script>
+<?php endforeach; ?>
 </head>
 <body>
 <div class="wrapper">
